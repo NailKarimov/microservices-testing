@@ -11,7 +11,7 @@ on:
       project:
         description: 'Which tests to run'
         type: choice
-        options: [all, ui, api, smoke]
+        options: [all, smoke]
         default: all
 
 permissions:
@@ -41,9 +41,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
       - name: Lint and type check
         run: |
           npm run lint
@@ -55,10 +52,10 @@ jobs:
         continue-on-error: true
         env:
           PROJECT: ${{ github.event.inputs.project || 'all' }}
+          # Stored in Settings → Secrets and variables → Actions; GitHub masks it in logs.
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         run: |
           case "$PROJECT" in
-            ui)    npm run test:ui ;;
-            api)   npm run test:api ;;
             smoke) npm run test:smoke ;;
             *)     npm test ;;
           esac

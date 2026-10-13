@@ -1,15 +1,12 @@
 {
-  "name": "qa-project-template",
+  "name": "openweather-api-tests",
   "version": "1.0.0",
   "private": true,
-  "description": "Template for test automation projects: Playwright + TypeScript, UI and API tests, Allure, GitHub Actions.",
+  "description": "API test automation for the OpenWeather API: contract validation, boundary values, units, auth, geocoding, forecast. Playwright + TypeScript + zod + Allure.",
   "license": "MIT",
   "scripts": {
     "test": "playwright test",
-    "test:ui": "playwright test --project=ui",
-    "test:api": "playwright test --project=api",
     "test:smoke": "playwright test --grep @smoke",
-    "test:headed": "playwright test --project=ui --headed",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -28,7 +25,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@faker-js/faker": "^10.6.0",
     "@playwright/test": "^1.64.0",
     "@types/node": "^26.6.5",
     "allure-commandline": "^2.46.1",
@@ -41,6 +37,7 @@
     "lint-staged": "^16.4.0",
     "prettier": "^3.9.10",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.1"
+    "typescript-eslint": "^8.71.1",
+    "zod": "^4.6.7"
   }
 }

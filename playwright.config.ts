@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 import { env } from './config/env';
 
 const isCI = !!process.env.CI;
@@ -8,25 +8,13 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
-  workers: isCI ? 2 : undefined,
+  // Free plan allows 60 calls/minute; two workers keep the suite well below that.
+  workers: 2,
   timeout: 30_000,
-  expect: { timeout: 5_000 },
-  reporter: [['list'], ['html', { open: 'never' }], ['allure-playwright']],
+  reporter: [[isCI ? 'github' : 'list'], ['html', { open: 'never' }], ['allure-playwright']],
   use: {
-    screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
-    video: 'retain-on-failure',
+    baseURL: env.apiBaseUrl,
+    extraHTTPHeaders: { Accept: 'application/json' },
   },
-  projects: [
-    {
-      name: 'api',
-      testDir: './tests/api',
-      use: { baseURL: env.apiBaseUrl, extraHTTPHeaders: { Accept: 'application/json' } },
-    },
-    {
-      name: 'ui',
-      testDir: './tests/ui',
-      use: { ...devices['Desktop Chrome'], baseURL: env.uiBaseUrl, testIdAttribute: 'data-test' },
-    },
-  ],
+  projects: [{ name: 'api' }],
 });

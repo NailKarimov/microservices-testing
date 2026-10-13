@@ -1,20 +1,22 @@
 import { test as base, expect } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
-import { InventoryPage } from './pages/InventoryPage';
 import { ApiClient } from './api/ApiClient';
-import { PostsClient } from './api/PostsClient';
+import { WeatherClient } from './api/WeatherClient';
+import { env } from '../config/env';
 
 type Fixtures = {
-  loginPage: LoginPage;
-  inventoryPage: InventoryPage;
-  posts: PostsClient;
+  weather: WeatherClient;
 };
 
-/** Tests ask for ready objects: async ({ loginPage, posts }) => { ... } */
+/** Tests receive a ready client: async ({ weather }) => { ... } */
 export const test = base.extend<Fixtures>({
-  loginPage: async ({ page }, use) => use(new LoginPage(page)),
-  inventoryPage: async ({ page }, use) => use(new InventoryPage(page)),
-  posts: async ({ request }, use) => use(new PostsClient(new ApiClient(request))),
+  weather: async ({ request }, use) => {
+    if (!env.apiKey) {
+      throw new Error(
+        'OPENWEATHER_API_KEY is not set: add it to .env locally or as a repository secret in CI.',
+      );
+    }
+    await use(new WeatherClient(new ApiClient(request, env.apiKey)));
+  },
 });
 
 export { expect };

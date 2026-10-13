@@ -1,18 +1,16 @@
 import 'dotenv/config';
 
 /** Reads a variable from the environment (or .env) and falls back to a default. */
-function read(name: string, fallback: string): string {
+function read(name: string, fallback = ''): string {
   const value = process.env[name];
-  return value && value.trim() !== '' ? value : fallback;
+  return value && value.trim() !== '' ? value.trim() : fallback;
 }
 
 /**
- * Test environment settings. Every value can be overridden with an environment
- * variable, so the same suite runs against local, staging or demo targets.
+ * Test environment settings. The API key is never stored in the repository:
+ * locally it comes from .env, in CI from the OPENWEATHER_API_KEY secret.
  */
 export const env = {
-  uiBaseUrl: read('UI_BASE_URL', 'https://www.saucedemo.com'),
-  apiBaseUrl: read('API_BASE_URL', 'https://jsonplaceholder.typicode.com'),
-  uiUsername: read('UI_USERNAME', 'standard_user'),
-  uiPassword: read('UI_PASSWORD', 'secret_sauce'),
+  apiBaseUrl: read('API_BASE_URL', 'https://api.openweathermap.org'),
+  apiKey: read('OPENWEATHER_API_KEY'),
 };
