@@ -22,18 +22,18 @@ test design and are listed below.
 | Pass rate                     | 100 %                                 |
 | Flaky tests (passed on retry) | 0                                     |
 | Test execution time           | ≈ 2.3 s (2 workers)                   |
-| API calls per run             | ≈ 45 (free plan limit: 60 per minute) |
+| API calls per run             | ≈ 50 (free plan limit: 60 per minute) |
 
 ## 3. Coverage
 
-| Endpoint                              | Tests | Techniques                                                                              |
-| ------------------------------------- | ----- | --------------------------------------------------------------------------------------- |
-| `/data/2.5/weather`                   | 18    | contract, boundary values (10), negative, `lang`, `mode=xml`, response time             |
-| `/data/2.5/forecast`                  | 9     | contract, invariants (40 steps × 3 h), `cnt` 1/8/40, units decision table (4)           |
-| `/geo/1.0/direct`, `/geo/1.0/reverse` | 7     | equivalence partitioning (`limit`), empty result, local names, consistency with weather |
-| `/data/2.5/air_pollution`             | 1     | contract (AQI 1–5, pollutants ≥ 0)                                                      |
-| Authentication                        | 3     | missing / invalid key on weather and geocoding                                          |
-| Key redaction (unit)                  | 2     | —                                                                                       |
+| Endpoint                              | Tests | Techniques                                                                                 |
+| ------------------------------------- | ----- | ------------------------------------------------------------------------------------------ |
+| `/data/2.5/weather`                   | 16    | contract, boundary values (10), missing parameter, unknown city, `mode=xml`, response time |
+| `/data/2.5/forecast`                  | 10    | contract, invariants (40 steps × 3 h), `cnt` 1/8/40, units decision table (4), `lang=de`   |
+| `/geo/1.0/direct`, `/geo/1.0/reverse` | 8     | equivalence partitioning (`limit`), empty result, local names, consistency with weather    |
+| `/data/2.5/air_pollution`             | 1     | contract (AQI 1–5, pollutants ≥ 0)                                                         |
+| Authentication                        | 3     | missing / invalid key on weather and geocoding                                             |
+| Key redaction (unit)                  | 2     | —                                                                                          |
 
 ## 4. Observations
 

@@ -30,7 +30,7 @@ Test design, scope, risks and exit criteria: [`docs/test-plan.md`](docs/test-pla
   (units, translations) run only when the responses share the same measurement time `dt`.
 - **The key never leaves the secret store.** `OPENWEATHER_API_KEY` comes from `.env` locally and from a
   repository secret in CI. Every request is attached to the Allure report with `appid=***`.
-- **Gentle on a free plan.** About 40 requests per run, two workers, one daily scheduled run —
+- **Gentle on a free plan.** About 50 requests per run, two workers, one daily scheduled run —
   far below the 60 calls/minute limit. No load testing against a third-party production API.
 
 ## Project structure
