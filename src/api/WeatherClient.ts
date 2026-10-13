@@ -21,7 +21,7 @@ export class WeatherClient {
   }
 
   /** 5 day / 3 hour forecast — /data/2.5/forecast */
-  forecast(coords: Coords, opts: { cnt?: number; units?: Units } = {}): Promise<ApiResult> {
+  forecast(coords: Coords, opts: { cnt?: number; units?: Units; lang?: string } = {}): Promise<ApiResult> {
     return this.api.get('/data/2.5/forecast', { lat: coords.lat, lon: coords.lon, ...opts });
   }
 
