@@ -4,7 +4,16 @@ import playwright from 'eslint-plugin-playwright';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['node_modules', 'test-results', 'playwright-report', 'allure-results', 'allure-report'] },
+  {
+    ignores: [
+      'node_modules',
+      'test-results',
+      'playwright-report',
+      'allure-results',
+      'allure-report',
+      'docs/sample-report',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
