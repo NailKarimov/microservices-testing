@@ -72,3 +72,49 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 
 - Automated suite in this repository, Allure report on GitHub Pages
 - Test summary report: [`test-report.md`](test-report.md)
+
+---
+
+# Test plan — Swagger Petstore v3
+
+## 1. Context
+
+- **System under test (SUT):** Swagger Petstore, OpenAPI 3.0 sample server — `https://petstore3.swagger.io/api/v3`
+- **Goal of testing:** show a full CRUD resource lifecycle, search, input validation and a check of the
+  server against its own OpenAPI document; find places where behaviour and contract diverge.
+- **References:** [openapi.json](https://petstore3.swagger.io/api/v3/openapi.json),
+  [Swagger UI](https://petstore3.swagger.io).
+
+## 2. Scope
+
+| In scope                                                                       | Out of scope                                        |
+| ------------------------------------------------------------------------------ | --------------------------------------------------- |
+| `POST/PUT /pet`, `GET/POST/DELETE /pet/{petId}`                                | `POST /pet/{petId}/uploadImage` (binary upload)     |
+| `GET /pet/findByStatus`, `GET /pet/findByTags`                                 | Authorization (the sandbox has none)                |
+| `GET /user/login`, `GET /user/logout`                                          | Load testing — shared public sandbox                |
+| `/store/*` and `POST /user` — as known-defect checks (the sandbox answers 500) | Persistence guarantees across days (data is shared) |
+| `GET /openapi.json` — contract checks                                          |                                                     |
+
+## 3. Test approach
+
+- **Level:** API (black box), Playwright `APIRequestContext`; `PetstoreClient` has one method per endpoint.
+- **Lifecycle (state transition):** create → read → replace → patch → delete → read gives 404, in one test
+  with `test.step` so the report shows which step failed.
+- **Equivalence partitioning and negative testing:** valid / unknown / negative / non-numeric ids; valid and
+  invalid `status`; valid JSON / malformed JSON / wrong media type.
+- **Oracle checks:** a created pet must appear in `findByStatus` and move to another status after an update.
+- **Contract checks:** zod schemas written from the OpenAPI document; the document itself is checked for the
+  operations and required fields the suite relies on (drift detection).
+- **Known defects:** behaviour required by the contract but not delivered is written as a normal test with
+  `test.fail(true, 'DEF-n: ...')`. The suite stays green while the defect exists and the test fails loudly
+  once the server is fixed, which forces the annotation to be removed.
+- **Test data:** every test builds its own pet (`src/petstore/data.ts`) with a unique id and cleans up in
+  `finally`; shared seed records are only read, never modified.
+
+## 4. Risks
+
+| Risk                                              | Impact                             | Mitigation                                                           |
+| ------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| Shared public data is changed by other people     | Flaky search and count assertions  | Assert only on own records (unique id/tag); never on list sizes      |
+| Sandbox is down or returns 500 for some endpoints | Failures that are not product bugs | Affected endpoints are isolated as `DEF-n` tests                     |
+| Leftover data from failed runs                    | Pollution of a public service      | Cleanup in `finally`; unique `qa-pet-` names make leftovers findable |

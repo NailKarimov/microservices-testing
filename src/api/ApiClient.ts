@@ -13,31 +13,73 @@ export type ApiResult<T = unknown> = {
   response: APIResponse;
 };
 
+export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+
+export type RequestOptions = {
+  query?: Query;
+  /** JSON request body. */
+  body?: unknown;
+  /** Raw body with an explicit content type, for negative tests (malformed JSON, wrong media type). */
+  raw?: { data: string; contentType: string };
+  headers?: Record<string, string>;
+};
+
 /**
  * Thin HTTP client over Playwright's APIRequestContext.
- * - adds the API key as `appid` (or a deliberately wrong/missing one for negative tests);
+ * - adds the API key as `appid` when one is configured (or a deliberately wrong/missing one for negative tests);
  * - attaches every request and response to the report with the key redacted;
  * - parses JSON when the server returns JSON.
  */
 export class ApiClient {
   constructor(
     private readonly request: APIRequestContext,
-    private readonly apiKey: string,
+    private readonly apiKey: string = '',
   ) {}
 
   /**
    * @param apiKey `undefined` → use the configured key, `null` → send no key, string → send that key.
    */
-  async get<T = unknown>(path: string, query: Query = {}, apiKey?: string | null): Promise<ApiResult<T>> {
+  get<T = unknown>(path: string, query: Query = {}, apiKey?: string | null): Promise<ApiResult<T>> {
+    return this.send<T>('GET', path, { query }, apiKey);
+  }
+
+  post<T = unknown>(path: string, opts: RequestOptions = {}): Promise<ApiResult<T>> {
+    return this.send<T>('POST', path, opts);
+  }
+
+  put<T = unknown>(path: string, opts: RequestOptions = {}): Promise<ApiResult<T>> {
+    return this.send<T>('PUT', path, opts);
+  }
+
+  delete<T = unknown>(path: string, opts: RequestOptions = {}): Promise<ApiResult<T>> {
+    return this.send<T>('DELETE', path, opts);
+  }
+
+  async send<T = unknown>(
+    method: Method,
+    path: string,
+    opts: RequestOptions = {},
+    apiKey?: string | null,
+  ): Promise<ApiResult<T>> {
     const params: Record<string, string> = {};
-    for (const [k, v] of Object.entries(query)) if (v !== undefined) params[k] = String(v);
+    for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined) params[k] = String(v);
     const key = apiKey === undefined ? this.apiKey : apiKey;
-    if (key !== null) params.appid = key;
+    if (key) params.appid = key;
+
+    const headers = { ...opts.headers };
+    let data: string | undefined;
+    if (opts.raw) {
+      data = opts.raw.data;
+      headers['Content-Type'] = opts.raw.contentType;
+    } else if (opts.body !== undefined) {
+      data = JSON.stringify(opts.body);
+      headers['Content-Type'] = 'application/json';
+    }
 
     const started = Date.now();
     let response: APIResponse;
     try {
-      response = await this.request.get(path, { params });
+      response = await this.request.fetch(path, { method, params, headers, data });
     } catch (error) {
       // Network errors include the full URL — rethrow without the key. The original error is
       // deliberately not attached as `cause`: it would print the key into the public report.
@@ -56,12 +98,13 @@ export class ApiClient {
       }
     }
 
-    const shownQuery = { ...params, ...(key !== null ? { appid: '***' } : {}) };
-    await test.info().attach(`GET ${path}`, {
+    const shownQuery = { ...params, ...(key ? { appid: '***' } : {}) };
+    await test.info().attach(`${method} ${path}`, {
       contentType: 'text/plain',
       body: [
-        `GET ${redact(response.url(), this.apiKey)}`,
+        `${method} ${redact(response.url(), this.apiKey)}`,
         `Query: ${JSON.stringify(shownQuery)}`,
+        ...(data !== undefined ? [`Request body: ${redact(data, this.apiKey).slice(0, 2_000)}`] : []),
         `Status: ${response.status()} (${durationMs} ms)`,
         `Content-Type: ${contentType}`,
         `Body:\n${redact(text, this.apiKey).slice(0, 5_000)}`,

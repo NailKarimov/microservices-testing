@@ -1,12 +1,14 @@
 {
-  "name": "openweather-api-tests",
+  "name": "api-test-automation",
   "version": "1.0.0",
   "private": true,
-  "description": "API test automation for the OpenWeather API: contract validation, boundary values, units, auth, geocoding, forecast. Playwright + TypeScript + zod + Allure.",
+  "description": "API test automation for public REST APIs (OpenWeather, Swagger Petstore): contract validation, CRUD lifecycle, boundary values, negative testing. Playwright + TypeScript + zod + Allure.",
   "license": "MIT",
   "scripts": {
     "test": "playwright test",
     "test:smoke": "playwright test --grep @smoke",
+    "test:openweather": "playwright test --project=openweather",
+    "test:petstore": "playwright test --project=petstore",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

@@ -8,3 +8,4 @@ allure-report/
 *.log
 .DS_Store
 Thumbs.db
+.claude/

@@ -8,13 +8,16 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
-  // Free plan allows 60 calls/minute; two workers keep the suite well below that.
+  // OpenWeather free plan allows 60 calls/minute; two workers keep the suite well below that.
   workers: 2,
   timeout: 30_000,
   reporter: [[isCI ? 'github' : 'list'], ['html', { open: 'never' }], ['allure-playwright']],
   use: {
-    baseURL: env.apiBaseUrl,
     extraHTTPHeaders: { Accept: 'application/json' },
   },
-  projects: [{ name: 'api' }],
+  projects: [
+    { name: 'openweather', testDir: './tests/openweather', use: { baseURL: env.apiBaseUrl } },
+    { name: 'petstore', testDir: './tests/petstore', use: { baseURL: env.petstoreBaseUrl } },
+    { name: 'unit', testDir: './tests/unit' },
+  ],
 });

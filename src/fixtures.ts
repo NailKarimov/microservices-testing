@@ -1,13 +1,15 @@
 import { test as base, expect } from '@playwright/test';
 import { ApiClient } from './api/ApiClient';
-import { WeatherClient } from './api/WeatherClient';
+import { WeatherClient } from './openweather/WeatherClient';
+import { PetstoreClient } from './petstore/PetstoreClient';
 import { env } from '../config/env';
 
 type Fixtures = {
   weather: WeatherClient;
+  petstore: PetstoreClient;
 };
 
-/** Tests receive a ready client: async ({ weather }) => { ... } */
+/** Tests receive ready clients: async ({ weather }) => { ... } / async ({ petstore }) => { ... } */
 export const test = base.extend<Fixtures>({
   weather: async ({ request }, use) => {
     if (!env.apiKey) {
@@ -16,6 +18,10 @@ export const test = base.extend<Fixtures>({
       );
     }
     await use(new WeatherClient(new ApiClient(request, env.apiKey)));
+  },
+  // The Petstore sandbox needs no key.
+  petstore: async ({ request }, use) => {
+    await use(new PetstoreClient(new ApiClient(request)));
   },
 });
 

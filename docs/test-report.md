@@ -51,3 +51,35 @@ None. Load testing was out of scope by design (third-party production API).
 
 1. Keep the daily scheduled run: it detects contract changes on the provider side early.
 2. If the project moves to a paid plan, extend the suite to One Call 3.0 with the same contract approach.
+
+---
+
+# Test summary report — Swagger Petstore v3
+
+- **Date:** 14.10.2026
+- **System under test:** Swagger Petstore v3 (`https://petstore3.swagger.io/api/v3`), public sandbox
+
+## 1. Summary
+
+All Petstore tests pass. Pet CRUD, search and validation behave as documented, except for the six defects
+below, which are recorded as expected failures (`test.fail`) so that the suite turns red once they are fixed.
+
+## 2. Defects
+
+| Id    | Endpoint                     | Expected (OpenAPI document)                            | Actual                                           |
+| ----- | ---------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
+| DEF-1 | `POST /pet`                  | `name` and `photoUrls` are required → 4xx without them | 200, pet stored with empty `photoUrls`           |
+| DEF-2 | `POST /pet`                  | `status` is an enum `available / pending / sold`       | Any string is accepted (`"weird"`)               |
+| DEF-3 | `GET /store/inventory`       | 200 with counts by status                              | 500 "There was an error processing your request" |
+| DEF-4 | `POST /store/order`          | 200 with the created order                             | 500                                              |
+| DEF-5 | `POST /user`                 | 200, user is created                                   | 500 (`GET/PUT/DELETE /user/{name}` also 500)     |
+| DEF-6 | `POST /pet/{id}?status=sold` | `name` and `status` are both optional                  | 400 "No Name provided"                           |
+
+## 3. Observations
+
+| #     | Observation                                                                                            | Impact on tests                            |
+| ----- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| OBS-4 | `POST /pet` with an existing id overwrites the record instead of returning 409                         | Test documents the overwrite               |
+| OBS-5 | `DELETE /pet/{id}` for a missing pet returns 200                                                       | Test treats DELETE as idempotent           |
+| OBS-6 | 404 for an unknown pet has `Content-Type: application/xml` but a plain-text body                       | Test checks the text, not the content type |
+| OBS-7 | The sandbox is shared: seed pets such as `id=1` can be modified by anyone, so tests never rely on them | All tests create and delete their own pets |
