@@ -27,6 +27,14 @@ export default defineConfig({
       dependencies: ['sockshop'],
       use: { baseURL: env.sockShop.gateway },
     },
+    // RabbitMQ `shipping-task` queue: runs serially, after sockshop and sockshop-chaos so the
+    // queue is not shared with their order placements.
+    {
+      name: 'sockshop-events',
+      testDir: './tests/sockshop-events',
+      dependencies: ['sockshop', 'sockshop-chaos'],
+      use: { baseURL: env.sockShop.gateway },
+    },
     // Cross-cutting HTTP security checks; every request uses an absolute URL, so there is no baseURL.
     { name: 'security', testDir: './tests/security' },
     { name: 'unit', testDir: './tests/unit' },

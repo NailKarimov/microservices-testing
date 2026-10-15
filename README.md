@@ -71,7 +71,7 @@ Needs Docker: `npm run stack:up` starts 13 containers from [`infra/sock-shop`](i
 A step-by-step animated walkthrough, from preparing the machine to removing the images, is in
 [`docs/microservices.html`](docs/microservices.html) (open it in a browser).
 
-Defects found in the demo (SS-1 … SS-16) are written as normal tests with `test.fail()`, like the Petstore ones.
+Defects found in the demo (SS-1 … SS-18) are written as normal tests with `test.fail()`, like the Petstore ones.
 If the stack is not running the Sock Shop tests are skipped locally and fail in CI (`REQUIRE_STACK=1`).
 
 #### OWASP API Security Top 10 (`security-owasp.spec.ts`)
@@ -82,6 +82,16 @@ is readable by customer id alone, with no session for that customer (SS-13); bru
 shipping, reachable with no authentication (SS-16). SSRF (OWASP API7) is not automated: the orders service
 builds internal requests from client-supplied URLs, and probing that safely needs a one-off, scoped check
 rather than a repeatable test — see [`docs/test-report.md`](docs/test-report.md) for the details found so far.
+
+#### Events: the `shipping-task` queue (`tests/sockshop-events/`)
+
+The orders service does not call shipping directly: it publishes a task to a RabbitMQ queue, and (in
+production) `queue-master` consumes it. That consumer is not started in this compose file, so the queue holds
+exactly what the orders service put there — a thin `amqplib` client (`src/sockshop/queue.ts`) checks it
+directly. A successful order publishes one message matching its `shipment.id` and `customerId`; a declined
+payment publishes nothing; and, as fault injection on the broker itself, an order still succeeds when
+RabbitMQ is stopped and its shipping task is silently lost, because the queue is also declared non-durable
+(SS-17, SS-18). These tests run serially, after `sockshop` and `sockshop-chaos`, each purging the queue first.
 
 ### Helpers
 

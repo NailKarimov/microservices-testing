@@ -142,7 +142,8 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 | user: `/register`, `/login`, `/addresses`, `/cards`                                    | Security testing beyond what is visible in API responses |
 | orders: `POST /orders` (calls user, carts, payment, shipping), search by customer / id |                                                          |
 | gateway: front page, proxied catalogue and tags, register with session cookie          |                                                          |
-| fault injection: payment and carts containers stopped and restarted                    |                                                          |
+| fault injection: payment, carts and rabbitmq containers stopped and restarted          |                                                          |
+| the `shipping-task` queue a successful order publishes to (RabbitMQ)                   |                                                          |
 
 ## 3. Test approach
 
@@ -157,6 +158,16 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 - **Fault injection.** `sockshop-chaos` stops a real container and checks the failure is bounded (answer
   within 30 s), consistent (no order stored), isolated (catalogue, carts and payment of other paths keep working)
   and recoverable (the same cart can be ordered after the container is back).
+- **Event-driven architecture.** The orders service does not call shipping directly: it publishes a task to
+  the `shipping-task` queue on RabbitMQ, and in production `queue-master` consumes it to update the shipment.
+  That consumer is not started in this compose file (it needs the Docker socket), which is useful rather than
+  a gap: nothing else reads the queue, so a test can assert on the exact message a given order produced.
+  `sockshop-events` (`src/sockshop/queue.ts`, a thin `amqplib` client) checks: a successful order publishes
+  exactly one message, matching the order's `shipment.id` and `customerId` (contract); a declined payment
+  publishes nothing (no task for an order that was never created); and, as fault injection on the broker
+  itself, what happens to the order and to the queue when RabbitMQ is stopped. These tests share one queue, so
+  they run serially (`mode: 'serial'`) after both `sockshop` and `sockshop-chaos`, and each starts by purging it
+  (the `queue` fixture), rather than freely in parallel with everything else that places orders.
 - **Known defects.** Behaviour that a payment system must not have is written as a test with `test.fail()` and
   an `SS-n` id; see the test report.
 - **OWASP API Security Top 10.** `security-owasp.spec.ts` checks the categories that apply to a service with

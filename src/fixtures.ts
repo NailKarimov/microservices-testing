@@ -4,6 +4,7 @@ import { ApiClient } from './api/ApiClient';
 import { WeatherClient } from './openweather/WeatherClient';
 import { PetstoreClient } from './petstore/PetstoreClient';
 import { SockShopClient } from './sockshop/SockShopClient';
+import { ShippingQueue } from './sockshop/queue';
 import { env } from '../config/env';
 
 let stack: Promise<boolean> | undefined;
@@ -19,6 +20,8 @@ type Fixtures = {
   weather: WeatherClient;
   petstore: PetstoreClient;
   shop: SockShopClient;
+  /** A connection to the `shipping-task` queue, purged before each test for isolation. */
+  queue: ShippingQueue;
   /** Auto fixture: labels every test in the Allure report. */
   allureLabels: void;
 };
@@ -29,6 +32,7 @@ const EPICS: Record<string, string> = {
   petstore: 'Swagger Petstore',
   sockshop: 'Sock Shop',
   'sockshop-chaos': 'Sock Shop',
+  'sockshop-events': 'Sock Shop',
   security: 'Security',
 };
 
@@ -73,6 +77,19 @@ export const test = base.extend<Fixtures>({
   // The Petstore sandbox needs no key.
   petstore: async ({ request }, use) => {
     await use(new PetstoreClient(new ApiClient(request)));
+  },
+  // eslint-disable-next-line no-empty-pattern
+  queue: async ({}, use) => {
+    if (!(await stackIsUp())) {
+      const reason = 'Sock Shop is not running: start it with `npm run stack:up`.';
+      if (env.requireStack) throw new Error(reason);
+      test.skip(true, reason);
+    }
+    const queue = new ShippingQueue();
+    await queue.connect();
+    await queue.purge();
+    await use(queue);
+    await queue.close();
   },
 });
 

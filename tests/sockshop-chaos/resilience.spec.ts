@@ -1,5 +1,3 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import {
   test,
   expect,
@@ -10,29 +8,13 @@ import {
   springErrorSchema,
 } from '../../src';
 import { env } from '../../config/env';
+import { docker, waitUntilUp } from '../../src/support/docker';
 import type { SockShopClient } from '../../src/sockshop/SockShopClient';
-
-const run = promisify(execFile);
-const COMPOSE = ['compose', '-f', 'infra/sock-shop/docker-compose.yml'];
-const docker = (...args: string[]) => run('docker', [...COMPOSE, ...args]);
 
 /** The cheapest sock keeps the total under the payment limit. */
 async function cheapestSock(shop: SockShopClient) {
   const socks = expectSchema(sockListSchema, (await shop.catalogue({ size: 1000 })).body);
   return socks.reduce((a, b) => (b.price < a.price ? b : a));
-}
-
-async function waitUntilUp(url: string, seconds: number) {
-  const deadline = Date.now() + seconds * 1000;
-  while (Date.now() < deadline) {
-    try {
-      if ((await fetch(url, { signal: AbortSignal.timeout(2_000) })).ok) return;
-    } catch {
-      /* still starting */
-    }
-    await new Promise((r) => setTimeout(r, 1_000));
-  }
-  throw new Error(`${url} did not come back within ${seconds} s`);
 }
 
 /**

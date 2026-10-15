@@ -85,6 +85,9 @@ services:
   rabbitmq:
     image: rabbitmq:3.6.8
     hostname: rabbitmq
+    # Published so tests can inspect the `shipping-task` queue the orders service publishes to
+    # (no queue-master is started in this compose file, so messages stay there until a test reads them).
+    ports: ['5672:5672']
     cap_drop: [all]
     cap_add: [CHOWN, SETGID, SETUID, DAC_OVERRIDE]
     read_only: true
