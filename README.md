@@ -71,8 +71,17 @@ Needs Docker: `npm run stack:up` starts 13 containers from [`infra/sock-shop`](i
 A step-by-step animated walkthrough, from preparing the machine to removing the images, is in
 [`docs/microservices.html`](docs/microservices.html) (open it in a browser).
 
-Defects found in the demo (SS-1 … SS-12) are written as normal tests with `test.fail()`, like the Petstore ones.
+Defects found in the demo (SS-1 … SS-16) are written as normal tests with `test.fail()`, like the Petstore ones.
 If the stack is not running the Sock Shop tests are skipped locally and fail in CI (`REQUIRE_STACK=1`).
+
+#### OWASP API Security Top 10 (`security-owasp.spec.ts`)
+
+Checks mapped to the categories that apply to a service with no real authentication: BOLA — a card or address
+is readable by customer id alone, with no session for that customer (SS-13); brute-force protection on login
+(SS-14); a maximum page size on the catalogue (SS-15); and the Spring Boot actuator of carts, orders and
+shipping, reachable with no authentication (SS-16). SSRF (OWASP API7) is not automated: the orders service
+builds internal requests from client-supplied URLs, and probing that safely needs a one-off, scoped check
+rather than a repeatable test — see [`docs/test-report.md`](docs/test-report.md) for the details found so far.
 
 ### Helpers
 

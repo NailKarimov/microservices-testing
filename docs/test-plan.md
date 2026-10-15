@@ -159,6 +159,13 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
   and recoverable (the same cart can be ordered after the container is back).
 - **Known defects.** Behaviour that a payment system must not have is written as a test with `test.fail()` and
   an `SS-n` id; see the test report.
+- **OWASP API Security Top 10.** `security-owasp.spec.ts` checks the categories that apply to a service with
+  no real authentication: BOLA (API1), brute-force protection on login (API2), resource limits on the
+  catalogue (API4), and the Spring Boot actuator endpoints of carts, orders and shipping (API8/API9). Each
+  check states the control that should exist; a gap is `test.fail()` with an `SS-n` id, same as the other
+  defects. SSRF (API7) is only noted as a manual follow-up (see the test report): the orders service builds
+  internal requests from client-supplied URLs, and probing that safely needs a one-off, carefully scoped
+  check rather than a repeatable test.
 - **Test data.** Each test registers its own customer with address and card, so tests run in parallel and
   never depend on seed users. The catalogue is read-only seed data.
 

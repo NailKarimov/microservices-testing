@@ -16,6 +16,10 @@ export class SockShopClient {
   health(service: keyof typeof env.sockShop): Promise<ApiResult> {
     return this.api.get(`${this.urls[service]}/health`);
   }
+  /** Spring Boot's legacy actuator (no `/actuator` prefix) on the Spring services (carts, orders, shipping). */
+  actuator(service: 'carts' | 'orders' | 'shipping', endpoint: 'actuator' | 'env'): Promise<ApiResult> {
+    return this.api.get(`${this.urls[service]}/${endpoint}`);
+  }
   authorisePayment(amount: unknown): Promise<ApiResult> {
     return this.api.post(`${this.urls.payment}/paymentAuth`, { body: { amount } });
   }

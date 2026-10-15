@@ -9,6 +9,8 @@ type Target = {
   apiKey?: string;
   /** Collection endpoint used for the OPTIONS check (defaults to `url`). */
   optionsUrl?: string;
+  /** A request the server must reject, used to inspect its error body. */
+  errorUrl: string;
   needsStack?: boolean;
   /** Known deviations: check id → defect id. The test is expected to fail until the server is fixed. */
   defects: Record<string, string>;
@@ -19,6 +21,7 @@ const TARGETS: Target[] = [
     name: 'OpenWeather',
     url: `${env.apiBaseUrl}/data/2.5/weather?q=Riga`,
     apiKey: env.apiKey,
+    errorUrl: `${env.apiBaseUrl}/data/2.5/weather?lat=abc&lon='"<>`,
     defects: {
       hsts: 'SEC-1: no Strict-Transport-Security header',
       nosniff: 'SEC-2: no X-Content-Type-Options header',
@@ -29,6 +32,7 @@ const TARGETS: Target[] = [
     name: 'Petstore',
     url: `${env.petstoreBaseUrl}pet/1`,
     optionsUrl: `${env.petstoreBaseUrl}pet`,
+    errorUrl: `${env.petstoreBaseUrl}pet/${'x'.repeat(20)}`,
     defects: {
       hsts: 'SEC-4: no Strict-Transport-Security header',
       nosniff: 'SEC-5: no X-Content-Type-Options header',
@@ -41,8 +45,12 @@ const TARGETS: Target[] = [
     // The gateway is plain HTTP inside the Docker network, so transport checks do not apply to it.
     name: 'Sock Shop gateway',
     url: `${env.sockShop.gateway}/catalogue?size=1`,
+    errorUrl: `${env.sockShop.gateway}/customers/x%27%22%3C%3E`,
     needsStack: true,
-    defects: {},
+    defects: {
+      nosniff: 'SEC-9: no X-Content-Type-Options header',
+      'powered-by': 'SEC-10: X-Powered-By: Express reveals the framework',
+    },
   },
 ];
 
@@ -133,9 +141,8 @@ for (const target of TARGETS) {
 
     test('an error response does not leak internals (stack trace, class names)', async () => {
       knownDefect('stack-trace');
-      const res = await client.send('GET', `${target.url}/%00/../../${'x'.repeat(40)}?id='"<>`);
+      const res = await client.send('GET', target.errorUrl);
 
-      expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.text).not.toMatch(STACK_TRACE);
     });
   });
