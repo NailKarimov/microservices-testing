@@ -118,3 +118,108 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 | Shared public data is changed by other people     | Flaky search and count assertions  | Assert only on own records (unique id/tag); never on list sizes      |
 | Sandbox is down or returns 500 for some endpoints | Failures that are not product bugs | Affected endpoints are isolated as `DEF-n` tests                     |
 | Leftover data from failed runs                    | Pollution of a public service      | Cleanup in `finally`; unique `qa-pet-` names make leftovers findable |
+
+---
+
+# Test plan — Sock Shop microservices
+
+## 1. Context
+
+- **System under test (SUT):** Sock Shop, the Weaveworks microservices demo — 6 business services (catalogue,
+  carts, user, orders, payment, shipping) with their databases and a message queue, behind an edge router and a
+  front-end. Images `weaveworksdemos/*`, started with Docker Compose from `infra/sock-shop/docker-compose.yml`.
+- **Goal of testing:** show how a payment flow is tested when it spans several services: each service on its own,
+  the contracts between them, the business rules of money, and what happens when one service is down.
+- **References:** [microservices-demo](https://github.com/microservices-demo/microservices-demo).
+
+## 2. Scope
+
+| In scope                                                                               | Out of scope                                             |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| payment: `/paymentAuth`, `/health`                                                     | The AngularJS front-end UI                               |
+| catalogue: `/catalogue`, `/catalogue/size`, `/catalogue/{id}`, `/tags`                 | Message consumption by `queue-master` (not started)      |
+| carts: `/carts/{id}/items` (add, list, remove), `/carts/{id}` (clear)                  | Load and performance testing                             |
+| user: `/register`, `/login`, `/addresses`, `/cards`                                    | Security testing beyond what is visible in API responses |
+| orders: `POST /orders` (calls user, carts, payment, shipping), search by customer / id |                                                          |
+| gateway: front page, proxied catalogue and tags, register with session cookie          |                                                          |
+| fault injection: payment and carts containers stopped and restarted                    |                                                          |
+
+## 3. Test approach
+
+- **Service level.** Every service is published on its own port, so each can be tested alone (contract, boundary
+  values, negative input) without going through the others.
+- **Integration across services.** `POST /orders` makes the orders service call user, carts, payment and
+  shipping. Tests follow one customer through the whole chain and check what each service contributed:
+  customer and address from user, lines from carts, the authorisation from payment, the shipment from shipping.
+- **Business rules of money.** Payment authorises up to and including 100.00 (goods plus a flat 4.99 shipping).
+  Boundaries are tested at 100.00 and 100.01, on the payment service and again through an order, which also
+  proves the order service applies the decision (406 and nothing stored).
+- **Fault injection.** `sockshop-chaos` stops a real container and checks the failure is bounded (answer
+  within 30 s), consistent (no order stored), isolated (catalogue, carts and payment of other paths keep working)
+  and recoverable (the same cart can be ordered after the container is back).
+- **Known defects.** Behaviour that a payment system must not have is written as a test with `test.fail()` and
+  an `SS-n` id; see the test report.
+- **Test data.** Each test registers its own customer with address and card, so tests run in parallel and
+  never depend on seed users. The catalogue is read-only seed data.
+
+## 4. Risks
+
+| Risk                                                   | Impact                                 | Mitigation                                                                |
+| ------------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------- |
+| Java services need up to 30 s to start                 | Tests run against a half-started stack | `scripts/wait-for-stack.mjs` waits for all 7 endpoints before tests       |
+| Docker is not available (no virtualization, no memory) | Tests cannot run locally               | Tests skip with a reason locally; CI sets `REQUIRE_STACK=1` and fails     |
+| Fault-injection tests disturb parallel tests           | False failures                         | Separate project that depends on, and therefore runs after, the others    |
+| Images are old (2019–2020)                             | Security of the demo itself            | The stack is bound to localhost / a throw-away CI runner, never published |
+
+---
+
+# Test plan — HTTP security headers (cross-cutting)
+
+## 1. Context
+
+- **System under test (SUT):** the HTTP edge of all three systems: OpenWeather, Petstore and the Sock Shop gateway.
+- **Goal of testing:** check, with one shared suite, the transport and browser-facing protections every public API
+  should have, and record where each system deviates. The checks need no credentials beyond the OpenWeather key.
+- **References:** [OWASP Secure Headers Project](https://owasp.org/www-project-secure-headers/),
+  [OWASP API Security Top 10, API8: Security Misconfiguration](https://owasp.org/API-Security/editions/2023/en/0xa8-security-misconfiguration/).
+
+## 2. Scope
+
+| In scope                                                            | Out of scope                                             |
+| ------------------------------------------------------------------- | -------------------------------------------------------- |
+| `Strict-Transport-Security`, `X-Content-Type-Options`               | TLS versions and cipher suites (needs a scanner)         |
+| `X-Powered-By` and the version in `Server` (information disclosure) | Content-Security-Policy (the APIs return JSON, not HTML) |
+| CORS: reflected origin, `*` combined with credentials               | Authentication and authorisation (planned: OWASP API)    |
+| `OPTIONS` that must not describe the API                            | Active attacks and fuzzing of third-party production     |
+| Error bodies: no stack trace, no internal class names               |                                                          |
+
+## 3. Test approach
+
+- **One spec, many targets.** `tests/security/headers.spec.ts` holds a list of targets (URL, key, known defects)
+  and generates the same 8 tests for each. A new system is one entry in the list.
+- **Secure baseline as the oracle.** Every test states the secure behaviour. A deviation the target is known to
+  have is listed in that target's `defects` map as `SEC-n`; the test then runs under `test.fail()`, like the
+  `DEF-n` and `SS-n` defects of the other suites, and turns red once the server is fixed.
+- **Read-only.** Only `GET` and `OPTIONS` requests; no data is created or changed.
+- **Transport checks** (HSTS) apply to HTTPS targets only; the Sock Shop gateway is plain HTTP inside Docker.
+
+## 4. Risks
+
+| Risk                                                       | Impact                           | Mitigation                                                        |
+| ---------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| Provider adds a header                                     | A `SEC-n` test turns red         | Intended: remove the entry from `defects`                         |
+| A server answers differently to `Accept: application/json` | `OPTIONS` check hides the defect | The `OPTIONS` test sends `Accept: */*`                            |
+| Sock Shop findings are not yet known                       | First CI run may show failures   | Run with the stack up once, then register the findings as `SEC-n` |
+
+---
+
+# Reporting — Allure
+
+- **Labels.** An auto fixture in `src/fixtures.ts` gives every test `owner`, `layer`, `epic` (system under test)
+  and `severity` (`@smoke` and `@security` are critical, the rest normal), so the report can be sliced by them.
+- **Categories.** `allure/categories.json` groups failures by cause: known defects, defects that were fixed (the
+  `test.fail` marker must go), contract violations, security findings, slow responses, infrastructure, product
+  defects and test defects.
+- **Metadata.** `scripts/allure-prepare.mjs` writes the environment block (Node, OS, branch, commit, base URLs)
+  and, in CI, the executor with links to the run and the published report. `npm run allure:generate` calls it.
+- **History.** The workflow restores `history` from `gh-pages` before generating, so the report shows trends.

@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Start the Sock Shop microservices (Docker)
+        run: npm run stack:up
+
       - name: Lint and type check
         run: |
           npm run lint
@@ -52,6 +55,8 @@ jobs:
         continue-on-error: true
         env:
           PROJECT: ${{ github.event.inputs.project || 'all' }}
+          # A missing Sock Shop stack must fail the run, not skip its tests.
+          REQUIRE_STACK: '1'
           # Stored in Settings → Secrets and variables → Actions; GitHub masks it in logs.
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
         run: |
@@ -89,6 +94,14 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 14
+
+      - name: Sock Shop logs (only when something failed)
+        if: steps.tests.outcome == 'failure'
+        run: docker compose -f infra/sock-shop/docker-compose.yml logs --no-color --tail 150
+
+      - name: Stop the Sock Shop
+        if: always()
+        run: npm run stack:down
 
       - name: Fail the job if tests failed
         if: steps.tests.outcome == 'failure'

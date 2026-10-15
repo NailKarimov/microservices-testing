@@ -6,6 +6,8 @@ export type Query = Record<string, string | number | undefined>;
 export type ApiResult<T = unknown> = {
   status: number;
   body: T;
+  /** The body parsed as JSON whatever the content type says (undefined when it is not JSON). */
+  json: unknown;
   text: string;
   contentType: string;
   /** Wall-clock duration of the request in milliseconds. */
@@ -13,7 +15,7 @@ export type ApiResult<T = unknown> = {
   response: APIResponse;
 };
 
-export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+export type Method = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS';
 
 export type RequestOptions = {
   query?: Query;
@@ -98,6 +100,13 @@ export class ApiClient {
       }
     }
 
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = undefined;
+    }
+
     const shownQuery = { ...params, ...(key ? { appid: '***' } : {}) };
     await test.info().attach(`${method} ${path}`, {
       contentType: 'text/plain',
@@ -111,6 +120,6 @@ export class ApiClient {
       ].join('\n'),
     });
 
-    return { status: response.status(), body: body as T, text, contentType, durationMs, response };
+    return { status: response.status(), body: body as T, json, text, contentType, durationMs, response };
   }
 }

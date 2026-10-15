@@ -18,6 +18,17 @@ export default defineConfig({
   projects: [
     { name: 'openweather', testDir: './tests/openweather', use: { baseURL: env.apiBaseUrl } },
     { name: 'petstore', testDir: './tests/petstore', use: { baseURL: env.petstoreBaseUrl } },
+    // Microservices in Docker: `npm run stack:up` first. Skipped locally when the stack is down.
+    { name: 'sockshop', testDir: './tests/sockshop', use: { baseURL: env.sockShop.gateway } },
+    // Fault injection (stops and restarts containers), so it runs only after the other Sock Shop tests.
+    {
+      name: 'sockshop-chaos',
+      testDir: './tests/sockshop-chaos',
+      dependencies: ['sockshop'],
+      use: { baseURL: env.sockShop.gateway },
+    },
+    // Cross-cutting HTTP security checks; every request uses an absolute URL, so there is no baseURL.
+    { name: 'security', testDir: './tests/security' },
     { name: 'unit', testDir: './tests/unit' },
   ],
 });

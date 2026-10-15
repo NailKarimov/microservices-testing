@@ -3,14 +3,19 @@
 [![Tests](https://github.com/NailKarimov/api-test-automation/actions/workflows/tests.yml/badge.svg)](https://github.com/NailKarimov/api-test-automation/actions/workflows/tests.yml)
 [![Allure report](https://img.shields.io/badge/report-Allure-orange)](https://nailkarimov.github.io/api-test-automation/)
 
-API test automation for public REST APIs. One framework, two systems under test:
+API test automation for public REST APIs. One framework, three systems under test:
 
 - **[OpenWeather API](https://openweathermap.org/api)** — read-only API with live data: contract validation,
   boundary values, unit conversions, authentication, geocoding, forecast and air quality.
 - **[Swagger Petstore v3](https://petstore3.swagger.io)** — CRUD API with an OpenAPI document: full resource
   lifecycle, search, input validation, negative tests, and checks of the server against its own contract.
 
-**Playwright (API testing) + TypeScript + zod + Allure**, run daily in **GitHub Actions**.
+- **[Sock Shop](https://github.com/microservices-demo/microservices-demo)** — a payment-centred microservices demo
+  (catalogue, carts, user, orders, payment, shipping behind a gateway) that runs in **Docker**: service-level
+  tests, an end-to-end order flow across services, payment limits, and fault injection (a container is stopped
+  and the system must degrade cleanly).
+
+**Playwright (API testing) + TypeScript + zod + Allure + Docker**, run daily in **GitHub Actions**.
 
 ## What is tested
 
@@ -41,6 +46,34 @@ public sandbox are marked with `test.fail()` and a `DEF-n` id. They stay green w
 turn red the moment the server is fixed, so the marker can be removed. See
 [`docs/test-report.md`](docs/test-report.md).
 
+### Security headers (`tests/security/`)
+
+One spec runs the same checks against all three systems: HSTS, `X-Content-Type-Options`, `X-Powered-By`,
+version in the `Server` header, CORS (no `*` with credentials, no reflected origin), `OPTIONS` that does not
+describe the API, and error bodies without stack traces or class names. Findings the servers currently have
+are marked `test.fail()` with a `SEC-n` id (for example Petstore: no HSTS, `Server: Jetty(9.4.53…)`, WADL on
+`OPTIONS`; OpenWeather: `Allow-Origin: *` with `Allow-Credentials: true`). Run: `npm run test:security`.
+
+### Sock Shop microservices (`tests/sockshop/`, `tests/sockshop-chaos/`)
+
+Needs Docker: `npm run stack:up` starts 13 containers from [`infra/sock-shop`](infra/sock-shop/docker-compose.yml).
+
+| Area           | Spec              | Technique                              | Examples                                                                                                                      |
+| -------------- | ----------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Payment        | `payment.spec`    | Boundary value analysis, negative      | 100.00 authorised, 100.01 declined; a decline is HTTP 200; invalid input answered with 500 (SS-1)                             |
+| Orders         | `orders.spec`     | End-to-end across services, boundaries | cart → order → payment → shipping; total = goods + 4.99; 95.01 + 4.99 passes, 95.02 + 4.99 gets 406; no order after a decline |
+| Cart           | `cart.spec`       | State, isolation                       | same sock twice → quantity 2; two customers' carts do not mix; remove by catalogue id; price tampering (SS-6)                 |
+| User and cards | `user.spec`       | Security, negative                     | register / login; wrong password answered with 500 (SS-2); full card number and CCV returned in clear text (SS-4)             |
+| Catalogue      | `catalogue.spec`  | Contract, pagination, filtering        | size and page; tags filter; `/catalogue/size` equals the list; unknown id answered with 500 (SS-5)                            |
+| Gateway        | `gateway.spec`    | Consistency                            | catalogue and tags through the gateway equal the services; register starts an HttpOnly session                                |
+| Resilience     | `resilience.spec` | Fault injection                        | payment container stopped → order fails within 30 s, nothing stored, other services up; recovery without repair               |
+
+A step-by-step animated walkthrough, from preparing the machine to removing the images, is in
+[`docs/microservices.html`](docs/microservices.html) (open it in a browser).
+
+Defects found in the demo (SS-1 … SS-12) are written as normal tests with `test.fail()`, like the Petstore ones.
+If the stack is not running the Sock Shop tests are skipped locally and fail in CI (`REQUIRE_STACK=1`).
+
 ### Helpers
 
 | Spec                        | What it checks                                 |
@@ -60,6 +93,9 @@ Test design, scope, risks and exit criteria: [`docs/test-plan.md`](docs/test-pla
   (units, translations) run only when the responses share the same measurement time `dt`.
 - **Shared sandbox, isolated tests.** The Petstore is public: every test creates its own pet with a unique id
   and removes it afterwards, and never touches records it did not create.
+- **Microservices as they run in production.** The Sock Shop is started with Docker Compose and every service
+  is published on its own port, so a test can talk to one service, to the gateway, or follow a request through
+  several services. Fault-injection tests stop real containers and always put them back.
 - **The key never leaves the secret store.** `OPENWEATHER_API_KEY` comes from `.env` locally and from a
   repository secret in CI. Every request is attached to the Allure report with `appid=***`.
 - **Gentle on third-party APIs.** About 100 requests per run, two workers, one daily scheduled run.
@@ -72,17 +108,22 @@ config/env.ts              base URLs and secrets from the environment
 src/api/ApiClient.ts       generic HTTP client: GET/POST/PUT/DELETE, redacted request/response in the report
 src/openweather/           WeatherClient, zod contracts, reference locations
 src/petstore/              PetstoreClient, zod contracts, test data builders
+src/sockshop/              SockShopClient, zod contracts for the microservices
 src/fixtures.ts            `weather` and `petstore` fixtures injected into tests
 tests/openweather/         OpenWeather specs
 tests/petstore/            Petstore specs
+tests/sockshop/            Sock Shop service and end-to-end specs
+tests/sockshop-chaos/      fault-injection specs (stop and restart containers)
+infra/sock-shop/           Docker Compose file of the microservices
+scripts/                   wait-for-stack.mjs
 tests/unit/                unit tests of helpers
 docs/                      test plan, test summary report, static sample of the Allure report
 ```
 
 ## Running locally
 
-Requirements: Node.js 22+, Java 17+ (for the Allure CLI). OpenWeather tests also need a free API key;
-the Petstore needs nothing.
+Requirements: Node.js 22+, Java 17+ (for the Allure CLI), Docker for the Sock Shop (about 4 GB of free memory;
+on Windows, turn virtualization on in the BIOS). OpenWeather tests also need a free API key; the Petstore needs nothing.
 
 ```bash
 npm ci
@@ -90,6 +131,10 @@ cp .env.example .env       # then put your key into OPENWEATHER_API_KEY
 npm test                   # everything
 npm run test:openweather   # OpenWeather only
 npm run test:petstore      # Petstore only (no key needed)
+npm run stack:up           # start the Sock Shop microservices in Docker and wait until ready
+npm run test:sockshop      # Sock Shop service tests + fault injection (needs the stack)
+npm run stack:down         # stop and remove the containers (images stay, next start takes ~32 s)
+npm run stack:purge        # same, and delete all 12 images (frees ~3 GB of disk)
 npm run test:smoke         # @smoke tests only
 npm run lint && npm run typecheck
 npm run allure:generate && npm run allure:open
@@ -100,4 +145,13 @@ In CI the key is the repository secret `OPENWEATHER_API_KEY`
 
 ## Tech stack
 
-Playwright Test (APIRequestContext) · TypeScript · zod · Allure Report · ESLint · Prettier · husky · GitHub Actions
+Playwright Test (APIRequestContext) · TypeScript · zod · Docker Compose · Allure Report · ESLint · Prettier · husky · GitHub Actions
+
+## Allure report
+
+Every test gets `owner`, `layer`, `epic` (system under test) and `severity` (`@smoke` and `@security` are
+critical) automatically from a fixture in [`src/fixtures.ts`](src/fixtures.ts). `npm run allure:generate` first
+runs [`scripts/allure-prepare.mjs`](scripts/allure-prepare.mjs), which adds failure
+[categories](allure/categories.json) (known defects, fixed defects, security findings, infrastructure, product
+and test defects), the environment block and, in CI, a link to the run. Run history is restored from
+`gh-pages`, so the report shows trends.

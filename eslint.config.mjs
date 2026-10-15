@@ -26,5 +26,18 @@ export default tseslint.config(
       'playwright/no-focused-test': 'error',
     },
   },
+  {
+    // Node scripts outside the test tree
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        process: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
+        setTimeout: 'readonly',
+      },
+    },
+  },
   prettier,
 );

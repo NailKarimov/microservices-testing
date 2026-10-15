@@ -10,3 +10,7 @@ export type { Units, Coords } from './openweather/WeatherClient';
 // Swagger Petstore
 export * from './petstore/schemas';
 export { newPet, uniqueId } from './petstore/data';
+
+// Sock Shop microservices
+export * from './sockshop/schemas';
+export type { Checkout } from './sockshop/SockShopClient';

@@ -16,4 +16,19 @@ export const env = {
   apiKey: read('OPENWEATHER_API_KEY'),
   /** Swagger Petstore v3 (public sandbox, no key). The trailing slash matters for relative paths. */
   petstoreBaseUrl: read('PETSTORE_BASE_URL', 'https://petstore3.swagger.io/api/v3/'),
+  /** Sock Shop microservices started by infra/sock-shop/docker-compose.yml (one port per service). */
+  sockShop: (() => {
+    const host = read('SOCKSHOP_HOST', 'http://localhost');
+    return {
+      gateway: `${host}:8081`,
+      payment: `${host}:8082`,
+      catalogue: `${host}:8083`,
+      carts: `${host}:8084`,
+      orders: `${host}:8085`,
+      shipping: `${host}:8086`,
+      user: `${host}:8087`,
+    };
+  })(),
+  /** In CI a missing Sock Shop stack must fail the run instead of silently skipping its tests. */
+  requireStack: read('REQUIRE_STACK') === '1',
 };
