@@ -4,6 +4,7 @@ playwright-report/
 blob-report/
 allure-results/
 allure-report/
+loadtests-results/
 .env
 *.log
 .DS_Store

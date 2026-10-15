@@ -1,0 +1,55 @@
+name: Load test
+
+# Manual only: a stress run takes minutes and is not meant to gate every push, and GitHub's free
+# runners (2 vCPU, 7 GB RAM) are smaller than the laptop the numbers in docs/test-report.md came
+# from — this is here to let the same scripts be re-run on demand, not to replace that baseline.
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Load test to run'
+        type: choice
+        options: [catalogue-browse, checkout]
+        default: catalogue-browse
+      profile:
+        description: 'Profile'
+        type: choice
+        options: [smoke, load, stress]
+        default: smoke
+
+jobs:
+  loadtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start the Sock Shop microservices (Docker)
+        run: npm run stack:up
+
+      - name: Run the load test
+        run: node scripts/run-k6.mjs ${{ inputs.script }} ${{ inputs.profile }}
+
+      - name: Sock Shop logs (only when something failed)
+        if: failure()
+        run: docker compose -f infra/sock-shop/docker-compose.yml logs --no-color --tail 150
+
+      - name: Stop the Sock Shop
+        if: always()
+        run: npm run stack:down
+
+      - name: Upload the k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: loadtest-${{ inputs.script }}-${{ inputs.profile }}
+          path: loadtests-results
+          retention-days: 30

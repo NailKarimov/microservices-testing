@@ -39,5 +39,16 @@ export default tseslint.config(
       },
     },
   },
+  {
+    // k6 load test scripts: run inside k6's own JS runtime, not Node.
+    files: ['loadtests/**/*.js'],
+    languageOptions: {
+      globals: {
+        __ENV: 'readonly',
+        __VU: 'readonly',
+        __ITER: 'readonly',
+      },
+    },
+  },
   prettier,
 );

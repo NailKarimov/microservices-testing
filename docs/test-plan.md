@@ -191,6 +191,54 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 
 ---
 
+# Test plan — Load testing (k6)
+
+## 1. Context
+
+- **System under test (SUT):** the same Sock Shop stack, on the same machine: 7 Java/Go services, most
+  with `-Xmx128m` (see `infra/sock-shop/docker-compose.yml`), no horizontal scaling.
+- **Goal of testing:** find out how this specific stack, on this specific hardware, behaves as concurrency
+  grows — not to size a production deployment. The numbers in `docs/test-report.md` describe one laptop.
+- **Tool:** [k6](https://k6.io), run from `grafana/k6:1.8.2` in a throw-away container on the stack's own
+  Docker network (`scripts/run-k6.mjs`), so scripts reach services by their compose hostname exactly like
+  the orders service does — no port mapping, no extra setup.
+
+## 2. Scope
+
+| In scope                                                                                     | Out of scope                                                               |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `loadtests/catalogue-browse.js`: `/catalogue`, `/catalogue/{id}`, `/tags`, `/catalogue/size` | The front-end UI (browser rendering, JS, assets)                           |
+| `loadtests/checkout.js`: register → address → card → add to cart → order                     | Load testing OpenWeather or Petstore (third-party, shared public services) |
+| Three profiles per script: smoke, load, stress (`loadtests/lib/profiles.js`)                 | Sizing recommendations for a real deployment                               |
+
+## 3. Test approach
+
+- **Two tiers, matched to what each script does.** `catalogue-browse` is read-only and cheap to repeat, so
+  it runs at higher concurrency (up to 60 VUs). `checkout` writes one customer and one order per iteration,
+  so it runs at a fraction of that (up to 20 VUs) — otherwise the test's own data growth, not the services,
+  would dominate the result.
+- **Three profiles, one purpose each:**
+  - **smoke** — 1–2 VUs for 15 s: the scenario itself works and the baseline latency is sane.
+  - **load** — ramps to the tier's normal concurrency and holds it for 90 s: the expected day-to-day level.
+  - **stress** — ramps well past that: looking for where latency or the error rate turns, not confirming a
+    number. Thresholds here are loose on purpose (`abortOnFail` is never set): the run completes and reports
+    the degradation instead of stopping at the first slow request.
+- **Thresholds** (`p(95)` response time, `http_req_failed` rate) are the pass/fail signal for smoke and load;
+  for stress they are a recorded expectation, not a release gate — see the test report for what was found.
+- **Idempotent read load** (`catalogue-browse`) is safe to run any number of times. **Checkout load** writes
+  real MongoDB documents with no cleanup step; `npm run stack:down` (no named volumes) is the way to reclaim
+  that data between sessions, by throwing the containers away.
+
+## 4. Risks
+
+| Risk                                                     | Impact                                  | Mitigation                                                                                                            |
+| -------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Results depend on the machine running them               | Numbers are not comparable across runs  | Every number in the report states the hardware and is read as a shape (where latency turns), not an absolute capacity |
+| `checkout` load fills the Mongo databases with test data | Slower services over many repeated runs | `npm run stack:down && npm run stack:up` discards all container data                                                  |
+| A stress run pushes a service into real failure          | Could leave the stack in a bad state    | Run against a disposable local/CI stack only, never a shared one; `stack:down` always recovers it                     |
+
+---
+
 # Test plan — HTTP security headers (cross-cutting)
 
 ## 1. Context

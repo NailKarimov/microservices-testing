@@ -201,3 +201,50 @@ two basic browser protections, and Petstore additionally discloses its server ve
 2. Do not send `Allow-Credentials: true` with a wildcard origin (SEC-3).
 3. Hide the server version and the generated WADL, and return generic error messages (SEC-6, 7, 8).
 4. Start the Sock Shop locally once and register what the gateway returns.
+
+---
+
+# Test summary report — Load testing (k6)
+
+- **Date:** 15.10.2026
+- **System under test:** Sock Shop (Docker Compose), single machine — 12 logical CPUs, Docker Desktop given
+  7.7 GiB of memory. No other load on the machine during the runs.
+
+## 1. Summary
+
+Both scripts, at every profile including a one-off burst past the configured "stress" tier (150 VUs, ~620
+requests/s), ran with **0 % errors**. Nothing crashed, no container needed a restart. The interesting result
+is not failure but a clear latency curve: catalogue reads barely move under load, while the checkout flow's
+tail latency grows noticeably as concurrency rises — a queueing effect, not an error, and worth knowing
+before mistaking "no errors" for "no limit."
+
+## 2. Results
+
+| Script                                       | Profile | VUs (peak) | Duration | Requests | p(95) latency | Error rate |
+| -------------------------------------------- | ------- | ---------- | -------- | -------- | ------------- | ---------- |
+| catalogue-browse                             | smoke   | 2          | 15 s     | 60       | 1.8 ms        | 0 %        |
+| catalogue-browse                             | load    | 20         | 2m15s    | 9,020    | 2.1 ms        | 0 %        |
+| catalogue-browse                             | stress  | 60         | 2m15s    | 27,000   | 2.3 ms        | 0 %        |
+| checkout                                     | smoke   | 1          | 15 s     | 84       | 34.7 ms       | 0 %        |
+| checkout                                     | load    | 8          | 2m15s    | 5,328    | 14.7 ms       | 0 %        |
+| checkout                                     | stress  | 20         | 2m15s    | 13,260   | 11.8 ms       | 0 %        |
+| checkout (ad hoc burst, not a saved profile) | —       | 150        | 1m20s    | 49,824   | 277.5 ms      | 0 %        |
+
+## 3. Observations
+
+| #      | Observation                                                                                                                                                                                                                             | Impact on tests                                                                                                              |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| OBS-18 | `catalogue`'s p(95) stays near 2 ms from 2 VUs to 60 VUs: its tiny MySQL seed set and read-only path barely register the extra concurrency                                                                                              | The configured "stress" profile (60 VUs) does not find a limit for this script; the ad hoc burst above does                  |
+| OBS-19 | `checkout`'s p(95) rises from 34.7 ms at 1 VU to 277.5 ms at 150 VUs: five chained writes per iteration (user, address, card, carts, orders) queue up under concurrency well before any request fails                                   | Latency, not the error rate, is the first signal this stack is under pressure                                                |
+| OBS-20 | `orders` and `carts` sit at 320–350 MiB of resident memory under load despite `-Xmx128m`: the flag bounds the JVM heap, not the container's total memory, so the containers were never close to the host's memory ceiling in these runs | Memory was not the limiting factor for any profile run here                                                                  |
+| OBS-21 | Every `checkout` iteration writes one customer, address, card and order with no cleanup; the three profile runs for this report alone left 3,112 orders in `orders-db`                                                                  | `npm run stack:down` discards all container data (no named volumes), which is the way to reset between load-testing sessions |
+
+## 4. Recommendations
+
+1. Treat `checkout`'s rising p(95) as the real stress signal here, not the error rate: investigate connection
+   pool / thread pool sizes on `carts` and `orders` before concurrency reaches the triple digits in any
+   environment that matters.
+2. Re-run periodically after infrastructure changes (more memory, a connection pool change, a newer JVM) to
+   see whether the latency curve moves, using the same profiles for a like-for-like comparison.
+3. If this ever runs against a shared or production-like environment, rebuild the thresholds for that
+   hardware — the numbers above describe one laptop, not a capacity plan.

@@ -93,6 +93,28 @@ payment publishes nothing; and, as fault injection on the broker itself, an orde
 RabbitMQ is stopped and its shipping task is silently lost, because the queue is also declared non-durable
 (SS-17, SS-18). These tests run serially, after `sockshop` and `sockshop-chaos`, each purging the queue first.
 
+### Load testing (`loadtests/`)
+
+[k6](https://k6.io) scripts run from `grafana/k6:1.8.2` on the Sock Shop's own Docker network
+(`scripts/run-k6.mjs`), so they reach services by their compose hostname — no port mapping needed.
+`catalogue-browse.js` is read-only (safe at high concurrency); `checkout.js` runs the full
+register → address → card → add-to-cart → order flow (writes real data, so it runs at lower concurrency).
+Each has three profiles — smoke, load, stress — defined once in [`loadtests/lib/profiles.js`](loadtests/lib/profiles.js).
+
+```bash
+npm run stack:up
+npm run loadtest:smoke      # catalogue-browse, smoke profile
+npm run loadtest:load       # catalogue-browse, load profile
+npm run loadtest:stress     # catalogue-browse, stress profile
+npm run loadtest:checkout   # checkout, load profile
+node scripts/run-k6.mjs checkout stress   # any script × any profile
+```
+
+Results (latency and the error rate at each profile, read against this machine's hardware, not as a
+capacity number): [`docs/test-report.md`](docs/test-report.md). A manual GitHub Actions workflow
+(`.github/workflows/loadtest.yml`, `workflow_dispatch` only — a stress run is not meant to gate every push)
+re-runs any script × profile and uploads the k6 summary as an artifact.
+
 ### Helpers
 
 | Spec                        | What it checks                                 |
@@ -118,7 +140,7 @@ Test design, scope, risks and exit criteria: [`docs/test-plan.md`](docs/test-pla
 - **The key never leaves the secret store.** `OPENWEATHER_API_KEY` comes from `.env` locally and from a
   repository secret in CI. Every request is attached to the Allure report with `appid=***`.
 - **Gentle on third-party APIs.** About 100 requests per run, two workers, one daily scheduled run.
-  No load testing against production services.
+  No load testing against production services — the k6 load tests only ever target the local Sock Shop.
 
 ## Project structure
 
@@ -134,7 +156,8 @@ tests/petstore/            Petstore specs
 tests/sockshop/            Sock Shop service and end-to-end specs
 tests/sockshop-chaos/      fault-injection specs (stop and restart containers)
 infra/sock-shop/           Docker Compose file of the microservices
-scripts/                   wait-for-stack.mjs
+loadtests/                 k6 load test scripts (catalogue-browse, checkout) and shared profiles
+scripts/                   wait-for-stack.mjs, allure-prepare.mjs, run-k6.mjs
 tests/unit/                unit tests of helpers
 docs/                      test plan, test summary report, static sample of the Allure report
 ```
@@ -164,7 +187,7 @@ In CI the key is the repository secret `OPENWEATHER_API_KEY`
 
 ## Tech stack
 
-Playwright Test (APIRequestContext) · TypeScript · zod · Docker Compose · Allure Report · ESLint · Prettier · husky · GitHub Actions
+Playwright Test (APIRequestContext) · TypeScript · zod · Docker Compose · RabbitMQ (amqplib) · k6 · Allure Report · ESLint · Prettier · husky · GitHub Actions
 
 ## Allure report
 
