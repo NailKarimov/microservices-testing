@@ -66,14 +66,15 @@ below, which are recorded as expected failures (`test.fail`) so that the suite t
 
 ## 2. Defects
 
-| Id    | Endpoint                     | Expected (OpenAPI document)                            | Actual                                           |
-| ----- | ---------------------------- | ------------------------------------------------------ | ------------------------------------------------ |
-| DEF-1 | `POST /pet`                  | `name` and `photoUrls` are required → 4xx without them | 200, pet stored with empty `photoUrls`           |
-| DEF-2 | `POST /pet`                  | `status` is an enum `available / pending / sold`       | Any string is accepted (`"weird"`)               |
-| DEF-3 | `GET /store/inventory`       | 200 with counts by status                              | 500 "There was an error processing your request" |
-| DEF-4 | `POST /store/order`          | 200 with the created order                             | 500                                              |
-| DEF-5 | `POST /user`                 | 200, user is created                                   | 500 (`GET/PUT/DELETE /user/{name}` also 500)     |
-| DEF-6 | `POST /pet/{id}?status=sold` | `name` and `status` are both optional                  | 400 "No Name provided"                           |
+| Id    | Endpoint                                       | Expected (OpenAPI document)                            | Actual                                                                                                     |
+| ----- | ---------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| DEF-1 | `POST /pet`                                    | `name` and `photoUrls` are required → 4xx without them | 200, pet stored with empty `photoUrls`                                                                     |
+| DEF-2 | `POST /pet`                                    | `status` is an enum `available / pending / sold`       | Any string is accepted (`"weird"`)                                                                         |
+| DEF-3 | `GET /store/inventory`                         | 200 with counts by status                              | 500 "There was an error processing your request"                                                           |
+| DEF-4 | `POST /store/order`                            | 200 with the created order                             | 500                                                                                                        |
+| DEF-5 | `POST /user`                                   | 200, user is created                                   | 500 (`GET/PUT/DELETE /user/{name}` also 500)                                                               |
+| DEF-6 | `POST /pet/{id}?status=sold`                   | `name` and `status` are both optional                  | 400 "No Name provided"                                                                                     |
+| DEF-7 | `GET /pet/findByStatus`, `GET /pet/findByTags` | responses match the `Pet` schema                       | records stored through DEF-1 come back without `name`; `findByTags` answers 500 while such a record exists |
 
 ## 3. Observations
 
