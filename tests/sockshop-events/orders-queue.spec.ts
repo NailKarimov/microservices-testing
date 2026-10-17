@@ -39,8 +39,8 @@ test.describe('Orders → shipping-task queue (RabbitMQ)', () => {
 
       const order = expectSchema(orderSchema, (await shop.placeOrder(checkout)).body);
 
-      const task = await queue.take();
-      expect(task).toBeDefined();
+      const task = await queue.takeWithin(10_000);
+      expect(task, 'no shipping task within 10 s of the order').toBeDefined();
       expect(task).toMatchObject({
         routingKey: 'shipping-task',
         contentType: 'application/json',
@@ -72,12 +72,13 @@ test.describe('Orders → shipping-task queue (RabbitMQ)', () => {
       await docker('start', 'rabbitmq');
     });
 
-    test('an order succeeds even when RabbitMQ is down, and its shipping task is lost', async ({ shop }) => {
-      test.fail(
-        true,
-        'SS-17: placing an order never checks that the shipping task was actually queued; with the ' +
-          'broker down the order is still created (just slower) and the shipping task silently disappears',
-      );
+    // SS-17 does not reproduce on every run: with the broker down the orders service sometimes
+    // refuses the order and sometimes confirms it (depends on whether its cached AMQP connection is
+    // already known to be dead). Both outcomes are checked; only the confirmed-order path is the
+    // defect, so `test.fail` is switched on for that path alone, and each run records which one it saw.
+    test('an order placed while RabbitMQ is down is either refused or keeps its shipping task', async ({
+      shop,
+    }) => {
       const checkout = await shop.newCustomer();
       const [sock] = await cheapSocks(shop);
       await shop.addToCart(checkout.customerId, sock.id, sock.price);
@@ -86,15 +87,23 @@ test.describe('Orders → shipping-task queue (RabbitMQ)', () => {
       const started = Date.now();
       const res = await shop.placeOrder(checkout);
       const seconds = (Date.now() - started) / 1_000;
-
-      // A system that depends on the shipping task reaching its queue would refuse the order
-      // (or retry) rather than confirm it and lose the task.
-      expect(res.status, `took ${seconds.toFixed(1)} s`).not.toBe(201);
+      const confirmed = res.status === 201;
+      test.info().annotations.push({
+        type: 'SS-17 observed',
+        description: `HTTP ${res.status} after ${seconds.toFixed(1)} s — order ${confirmed ? 'confirmed' : 'refused'}`,
+      });
+      test.fail(
+        confirmed,
+        'SS-17: the order is confirmed although the shipping task could not be queued, and the task is lost',
+      );
 
       await docker('start', 'rabbitmq');
       const queue = await ShippingQueue.connectWithRetry();
-      expect(await queue.messageCount()).toBe(0);
+      const queued = await queue.messageCount();
       await queue.close();
+
+      // Refused → nothing may be queued. Confirmed → its shipping task must not be lost.
+      expect(queued, `HTTP ${res.status}, ${queued} message(s) in shipping-task`).toBe(confirmed ? 1 : 0);
     });
 
     test('the shipping-task queue is declared durable, so a broker restart cannot drop a pending task', async ({

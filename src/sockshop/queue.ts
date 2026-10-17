@@ -60,6 +60,19 @@ export class ShippingQueue {
     });
   }
 
+  /**
+   * Waits for the next message: the orders service publishes asynchronously, so the task may land a
+   * moment after the HTTP response. Polls until a message arrives or the timeout runs out.
+   */
+  async takeWithin(timeoutMs = 10_000, intervalMs = 250): Promise<ShippingTask | undefined> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const task = await this.take();
+      if (task || Date.now() >= deadline) return task;
+      await new Promise((r) => setTimeout(r, intervalMs));
+    }
+  }
+
   async close(): Promise<void> {
     await this.connection?.close().catch(() => {});
   }
