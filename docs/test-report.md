@@ -56,34 +56,38 @@ None. Load testing was out of scope by design (third-party production API).
 
 # Test summary report — Swagger Petstore v3
 
-- **Date:** 14.10.2026
-- **System under test:** Swagger Petstore v3 (`https://petstore3.swagger.io/api/v3`), public sandbox
+- **Date:** 14.10.2026, updated 18.10.2026
+- **System under test:** Swagger Petstore v3. Until 17.10.2026 the public sandbox
+  (`https://petstore3.swagger.io/api/v3`, spec 1.0.27); since 18.10.2026 the private container
+  `swaggerapi/petstore3:unstable` (spec 1.0.17) from `infra/petstore`. See `docs/test-environments.md`.
 
 ## 1. Summary
 
-All Petstore tests pass. Pet CRUD, search and validation behave as documented, except for the six defects
-below, which are recorded as expected failures (`test.fail`) so that the suite turns red once they are fixed.
+All Petstore tests pass. Pet CRUD, search and validation behave as documented, except for the defects below,
+which are recorded as expected failures (`test.fail`) so that the suite turns red once they are fixed.
+Re-checked on the private container on 18.10.2026: DEF-1, DEF-2 and DEF-6 reproduce, DEF-3, DEF-4 and DEF-5 do
+not (closed as environment issues of the shared sandbox), DEF-7 depends on DEF-1 data.
 
 ## 2. Defects
 
-| Id    | Endpoint                                       | Expected (OpenAPI document)                            | Actual                                                                                                     |
-| ----- | ---------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| DEF-1 | `POST /pet`                                    | `name` and `photoUrls` are required → 4xx without them | 200, pet stored with empty `photoUrls`                                                                     |
-| DEF-2 | `POST /pet`                                    | `status` is an enum `available / pending / sold`       | Any string is accepted (`"weird"`)                                                                         |
-| DEF-3 | `GET /store/inventory`                         | 200 with counts by status                              | 500 "There was an error processing your request"                                                           |
-| DEF-4 | `POST /store/order`                            | 200 with the created order                             | 500                                                                                                        |
-| DEF-5 | `POST /user`                                   | 200, user is created                                   | 500 (`GET/PUT/DELETE /user/{name}` also 500)                                                               |
-| DEF-6 | `POST /pet/{id}?status=sold`                   | `name` and `status` are both optional                  | 400 "No Name provided"                                                                                     |
-| DEF-7 | `GET /pet/findByStatus`, `GET /pet/findByTags` | responses match the `Pet` schema                       | records stored through DEF-1 come back without `name`; `findByTags` answers 500 while such a record exists |
+| Id    | Endpoint                                       | Expected (OpenAPI document)                            | Actual                                                                                                             |
+| ----- | ---------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| DEF-1 | `POST /pet`                                    | `name` and `photoUrls` are required → 4xx without them | 200, pet stored with empty `photoUrls`                                                                             |
+| DEF-2 | `POST /pet`                                    | `status` is an enum `available / pending / sold`       | Any string is accepted (`"weird"`)                                                                                 |
+| DEF-3 | `GET /store/inventory`                         | 200 with counts by status                              | **Closed 18.10.2026** — 200 on a clean container; the sandbox itself answered 200 in the nightly run of 18.10.2026 |
+| DEF-4 | `POST /store/order`                            | 200 with the created order                             | **Closed 18.10.2026** — 200 on a clean container; the sandbox itself answered 200 in the nightly run of 18.10.2026 |
+| DEF-5 | `POST /user`                                   | 200, user is created                                   | **Closed 18.10.2026** — 200 on a clean container; still 500 on the sandbox, so an environment issue there          |
+| DEF-6 | `POST /pet/{id}?status=sold`                   | `name` and `status` are both optional                  | 400 "No Name provided"                                                                                             |
+| DEF-7 | `GET /pet/findByStatus`, `GET /pet/findByTags` | responses match the `Pet` schema                       | records stored through DEF-1 come back without `name`; `findByTags` answers 500 while such a record exists         |
 
 ## 3. Observations
 
-| #     | Observation                                                                                            | Impact on tests                            |
-| ----- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| OBS-4 | `POST /pet` with an existing id overwrites the record instead of returning 409                         | Test documents the overwrite               |
-| OBS-5 | `DELETE /pet/{id}` for a missing pet returns 200                                                       | Test treats DELETE as idempotent           |
-| OBS-6 | 404 for an unknown pet has `Content-Type: application/xml` but a plain-text body                       | Test checks the text, not the content type |
-| OBS-7 | The sandbox is shared: seed pets such as `id=1` can be modified by anyone, so tests never rely on them | All tests create and delete their own pets |
+| #     | Observation                                                                                                                           | Impact on tests                                                                      |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| OBS-4 | `POST /pet` with an existing id overwrites the record instead of returning 409                                                        | Test documents the overwrite                                                         |
+| OBS-5 | `DELETE /pet/{id}` for a missing pet returns 200                                                                                      | Test treats DELETE as idempotent                                                     |
+| OBS-6 | 404 for an unknown pet has `Content-Type: application/xml` but a plain-text body                                                      | Test checks the text, not the content type                                           |
+| OBS-7 | The public sandbox is shared: seed pets such as `id=1` can be modified by anyone, and its data and availability change without notice | The suite moved to a private container; tests still create and delete their own pets |
 
 ---
 

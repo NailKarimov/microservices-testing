@@ -79,7 +79,9 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 
 ## 1. Context
 
-- **System under test (SUT):** Swagger Petstore, OpenAPI 3.0 sample server — `https://petstore3.swagger.io/api/v3`
+- **System under test (SUT):** Swagger Petstore, OpenAPI 3.0 sample server — private container
+  `swaggerapi/petstore3:unstable` on `http://localhost:8090/api/v3` (until 17.10.2026: the public sandbox
+  `https://petstore3.swagger.io/api/v3`; the security-header checks still use it)
 - **Goal of testing:** show a full CRUD resource lifecycle, search, input validation and a check of the
   server against its own OpenAPI document; find places where behaviour and contract diverge.
 - **References:** [openapi.json](https://petstore3.swagger.io/api/v3/openapi.json),
@@ -87,13 +89,13 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 
 ## 2. Scope
 
-| In scope                                                                       | Out of scope                                        |
-| ------------------------------------------------------------------------------ | --------------------------------------------------- |
-| `POST/PUT /pet`, `GET/POST/DELETE /pet/{petId}`                                | `POST /pet/{petId}/uploadImage` (binary upload)     |
-| `GET /pet/findByStatus`, `GET /pet/findByTags`                                 | Authorization (the sandbox has none)                |
-| `GET /user/login`, `GET /user/logout`                                          | Load testing — shared public sandbox                |
-| `/store/*` and `POST /user` — as known-defect checks (the sandbox answers 500) | Persistence guarantees across days (data is shared) |
-| `GET /openapi.json` — contract checks                                          |                                                     |
+| In scope                                                                              | Out of scope                                        |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| `POST/PUT /pet`, `GET/POST/DELETE /pet/{petId}`                                       | `POST /pet/{petId}/uploadImage` (binary upload)     |
+| `GET /pet/findByStatus`, `GET /pet/findByTags`                                        | Authorization (the sandbox has none)                |
+| `GET /user/login`, `GET /user/logout`                                                 | Load testing — shared public sandbox                |
+| `/store/*` and `POST /user` (were known-defect checks while the sandbox answered 500) | Persistence guarantees across days (data is shared) |
+| `GET /openapi.json` — contract checks                                                 |                                                     |
 
 ## 3. Test approach
 
@@ -113,11 +115,11 @@ Structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened for a single proje
 
 ## 4. Risks
 
-| Risk                                              | Impact                             | Mitigation                                                           |
-| ------------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------- |
-| Shared public data is changed by other people     | Flaky search and count assertions  | Assert only on own records (unique id/tag); never on list sizes      |
-| Sandbox is down or returns 500 for some endpoints | Failures that are not product bugs | Affected endpoints are isolated as `DEF-n` tests                     |
-| Leftover data from failed runs                    | Pollution of a public service      | Cleanup in `finally`; unique `qa-pet-` names make leftovers findable |
+| Risk                                            | Impact                             | Mitigation                                                           |
+| ----------------------------------------------- | ---------------------------------- | -------------------------------------------------------------------- |
+| Shared public data is changed by other people   | Flaky search and count assertions  | Assert only on own records (unique id/tag); never on list sizes      |
+| Shared sandbox is down, polluted or returns 500 | Failures that are not product bugs | Private container per run; sandbox only for header checks            |
+| Leftover data from failed runs                  | Pollution of a public service      | Cleanup in `finally`; unique `qa-pet-` names make leftovers findable |
 
 ---
 
