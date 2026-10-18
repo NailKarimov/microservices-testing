@@ -1,0 +1,6 @@
+"BROKEN","EPIC","FAILED","FEATURE","PASSED","SKIPPED","STORY","UNKNOWN"
+"0","Sock Shop","0","","77","0","","0"
+"0","Security","0","","7","1","","0"
+"0","","0","","2","0","","0"
+"0","Sock Shop — resilience","0","","3","0","","0"
+"0","Sock Shop — events (RabbitMQ)","0","","4","0","","0"
