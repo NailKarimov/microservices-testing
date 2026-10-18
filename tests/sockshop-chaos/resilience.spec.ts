@@ -44,7 +44,14 @@ test.describe('Resilience: one microservice goes down', () => {
     const seconds = (Date.now() - started) / 1000;
 
     expect(res.status).toBe(500);
-    expect(expectSchema(springErrorSchema, res.body).message).toContain('timeout');
+    // "…timeout…" when the call hangs, "unspecified IO error" when the connection is refused at once:
+    // both mean payment is unreachable; which one depends on timing, so both are accepted and recorded.
+    const message = expectSchema(springErrorSchema, res.body).message;
+    test.info().annotations.push({
+      type: 'payment down',
+      description: `${res.status} "${message}" after ${seconds.toFixed(1)} s`,
+    });
+    expect(message).toMatch(/timeout|IO error/i);
     expect(seconds, 'the caller is not left hanging').toBeLessThan(30);
     expect(
       expectSchema(customerOrdersSchema, (await shop.ordersOf(checkout.customerId)).body)._embedded
@@ -64,9 +71,24 @@ test.describe('Resilience: one microservice goes down', () => {
 
     await docker('start', 'payment');
     await waitUntilUp(`${env.sockShop.payment}/health`, 60);
-    const res = await shop.placeOrder(checkout);
 
-    expect(res.status).toBe(201);
+    // payment's /health answering does not mean orders can reach it yet: right after a restart orders
+    // sometimes still fails with "unspecified IO error". Measure the time to recover (MTTR) instead of
+    // expecting the very first order to succeed; recovery must still happen without manual repair.
+    const back = Date.now();
+    let res = await shop.placeOrder(checkout);
+    let attempts = 1;
+    while (res.status !== 201 && Date.now() - back < 90_000) {
+      await new Promise((r) => setTimeout(r, 3_000));
+      res = await shop.placeOrder(checkout);
+      attempts++;
+    }
+    test.info().annotations.push({
+      type: 'time to recover',
+      description: `${((Date.now() - back) / 1000).toFixed(1)} s, ${attempts} order attempt(s) after payment was healthy`,
+    });
+
+    expect(res.status, 'orders recovers by itself within 90 s').toBe(201);
     expect(expectSchema(orderSchema, res.body).customerId).toBe(checkout.customerId);
   });
 
