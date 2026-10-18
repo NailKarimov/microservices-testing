@@ -597,7 +597,7 @@ a { color: var(--accent); font-weight: 600; }
 </section>
 
 <footer>
-  <a href="https://github.com/NailKarimov/api-test-automation">Source on GitHub</a>
+  <a href="https://github.com/NailKarimov/microservices-testing">Source on GitHub</a>
   <a href="https://github.com/microservices-demo/microservices-demo">Sock Shop by Weaveworks</a>
   <span>Timings and sizes measured on this project, 14 Oct 2026.</span>
 </footer>
@@ -649,7 +649,7 @@ a { color: var(--accent); font-weight: 600; }
     { t: 'Docker Desktop is running', p: 'The engine must answer, not only the app window.', c: 'docker info' },
     { t: 'Enough memory', p: 'The 13 containers use about 1.5 GB. Docker Desktop reserves more for its own VM, so keep 4 GB free.', big: ['1.5 GB', 'measured with docker stats'] },
     { t: 'Enough disk', p: 'Twelve images are downloaded once and kept for the next run.', big: ['3.0 GB', 'images on disk'] },
-    { t: 'Node 22 and the project', p: 'Installs Playwright, zod and the test code. The OpenWeather key is only needed for the weather tests.', c: 'npm ci' }
+    { t: 'Node 22 and the project', p: 'Installs Playwright, zod and the test code. No keys or secrets are needed.', c: 'npm ci' }
   ];
   var pre = $('pre');
   PRE.forEach(function (x, i) {

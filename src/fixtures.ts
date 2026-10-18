@@ -1,11 +1,8 @@
 import { test as base, expect } from '@playwright/test';
 import * as allure from 'allure-js-commons';
 import { ApiClient } from './api/ApiClient';
-import { WeatherClient } from './openweather/WeatherClient';
-import { PetstoreClient } from './petstore/PetstoreClient';
 import { SockShopClient } from './sockshop/SockShopClient';
 import { ShippingQueue } from './sockshop/queue';
-import { GraphQLClient } from './graphql/GraphQLClient';
 import { env } from '../config/env';
 
 let stack: Promise<boolean> | undefined;
@@ -17,19 +14,7 @@ function stackIsUp(): Promise<boolean> {
   return stack;
 }
 
-let petstore: Promise<boolean> | undefined;
-function petstoreIsUp(): Promise<boolean> {
-  petstore ??= fetch(`${env.petstoreBaseUrl}openapi.json`, { signal: AbortSignal.timeout(3_000) })
-    .then((r) => r.ok)
-    .catch(() => false);
-  return petstore;
-}
-
 type Fixtures = {
-  weather: WeatherClient;
-  petstore: PetstoreClient;
-  /** Rick and Morty GraphQL endpoint; `graph.api` also reaches the REST twin under /api. */
-  graph: GraphQLClient;
   shop: SockShopClient;
   /** A connection to the `shipping-task` queue, purged before each test for isolation. */
   queue: ShippingQueue;
@@ -39,16 +24,10 @@ type Fixtures = {
 
 const OWNER = 'Nail Karimov';
 const EPICS: Record<string, string> = {
-  openweather: 'OpenWeather',
-  petstore: 'Swagger Petstore',
   sockshop: 'Sock Shop',
-  'sockshop-chaos': 'Sock Shop',
-  'sockshop-events': 'Sock Shop',
+  'sockshop-chaos': 'Sock Shop — resilience',
+  'sockshop-events': 'Sock Shop — events (RabbitMQ)',
   security: 'Security',
-  graphql: 'GraphQL (Rick and Morty)',
-  ledger: 'Ledger API + PostgreSQL (Testcontainers)',
-  'contract-consumer': 'Contract tests (Pact)',
-  'contract-provider': 'Contract tests (Pact)',
 };
 
 /** @smoke → critical, @security → critical, everything else → normal. */
@@ -56,7 +35,14 @@ function severityOf(tags: string[]): 'critical' | 'normal' {
   return tags.includes('@smoke') || tags.includes('@security') ? 'critical' : 'normal';
 }
 
-/** Tests receive ready clients: async ({ weather }) => { ... } / async ({ petstore }) => { ... } */
+/** Without the stack the tests are skipped locally, and fail when REQUIRE_STACK=1 (CI). */
+async function requireStack(): Promise<void> {
+  if (await stackIsUp()) return;
+  const reason = 'Sock Shop is not running: start it with `npm run stack:up`.';
+  if (env.requireStack) throw new Error(reason);
+  test.skip(true, reason);
+}
+
 export const test = base.extend<Fixtures>({
   allureLabels: [
     // Playwright requires a destructuring pattern for the fixtures argument.
@@ -71,43 +57,13 @@ export const test = base.extend<Fixtures>({
     },
     { auto: true },
   ],
-  weather: async ({ request }, use) => {
-    if (!env.apiKey) {
-      throw new Error(
-        'OPENWEATHER_API_KEY is not set: add it to .env locally or as a repository secret in CI.',
-      );
-    }
-    await use(new WeatherClient(new ApiClient(request, env.apiKey)));
-  },
-  // The Sock Shop runs in Docker on this machine (or on the CI runner). Without it the tests are
-  // skipped locally, and fail when REQUIRE_STACK=1 (CI).
   shop: async ({ request }, use) => {
-    if (!(await stackIsUp())) {
-      const reason = 'Sock Shop is not running: start it with `npm run stack:up`.';
-      if (env.requireStack) throw new Error(reason);
-      test.skip(true, reason);
-    }
+    await requireStack();
     await use(new SockShopClient(new ApiClient(request)));
-  },
-  // Private Petstore container (infra/petstore). Skipped locally when it is not running; CI fails instead.
-  petstore: async ({ request }, use) => {
-    if (!(await petstoreIsUp())) {
-      const reason = `Petstore container is not running at ${env.petstoreBaseUrl}: start it with \`npm run fuzz:up\`.`;
-      if (env.requireStack) throw new Error(reason);
-      test.skip(true, reason);
-    }
-    await use(new PetstoreClient(new ApiClient(request)));
-  },
-  graph: async ({ request }, use) => {
-    await use(new GraphQLClient(new ApiClient(request)));
   },
   // eslint-disable-next-line no-empty-pattern
   queue: async ({}, use) => {
-    if (!(await stackIsUp())) {
-      const reason = 'Sock Shop is not running: start it with `npm run stack:up`.';
-      if (env.requireStack) throw new Error(reason);
-      test.skip(true, reason);
-    }
+    await requireStack();
     const queue = new ShippingQueue();
     await queue.connect();
     await queue.purge();

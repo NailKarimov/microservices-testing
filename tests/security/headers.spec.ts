@@ -18,30 +18,6 @@ type Target = {
 
 const TARGETS: Target[] = [
   {
-    name: 'OpenWeather',
-    url: `${env.apiBaseUrl}/data/2.5/weather?q=Riga`,
-    apiKey: env.apiKey,
-    errorUrl: `${env.apiBaseUrl}/data/2.5/weather?lat=abc&lon='"<>`,
-    defects: {
-      hsts: 'SEC-1: no Strict-Transport-Security header',
-      nosniff: 'SEC-2: no X-Content-Type-Options header',
-      cors: 'SEC-3: Access-Control-Allow-Origin "*" together with Allow-Credentials "true"',
-    },
-  },
-  {
-    name: 'Petstore',
-    url: `${env.petstorePublicUrl}pet/1`,
-    optionsUrl: `${env.petstorePublicUrl}pet`,
-    errorUrl: `${env.petstorePublicUrl}pet/${'x'.repeat(20)}`,
-    defects: {
-      hsts: 'SEC-4: no Strict-Transport-Security header',
-      nosniff: 'SEC-5: no X-Content-Type-Options header',
-      'server-version': 'SEC-6: Server header discloses "Jetty(9.4.53.v20231009)"',
-      'options-body': 'SEC-7: OPTIONS answers with a WADL description of the API',
-      'stack-trace': 'SEC-8: error message reveals the internal class `java.lang.Long`',
-    },
-  },
-  {
     // The gateway is plain HTTP inside the Docker network, so transport checks do not apply to it.
     name: 'Sock Shop gateway',
     url: `${env.sockShop.gateway}/catalogue?size=1`,
@@ -72,7 +48,6 @@ for (const target of TARGETS) {
         if (!up && env.requireStack) throw new Error('Sock Shop is not running');
         test.skip(!up, 'Sock Shop is not running: start it with `npm run stack:up`.');
       }
-      if (target.name === 'OpenWeather' && !target.apiKey) throw new Error('OPENWEATHER_API_KEY is not set');
       client = new ApiClient(request, target.apiKey);
     });
 
