@@ -30,9 +30,9 @@ const TARGETS: Target[] = [
   },
   {
     name: 'Petstore',
-    url: `${env.petstoreBaseUrl}pet/1`,
-    optionsUrl: `${env.petstoreBaseUrl}pet`,
-    errorUrl: `${env.petstoreBaseUrl}pet/${'x'.repeat(20)}`,
+    url: `${env.petstorePublicUrl}pet/1`,
+    optionsUrl: `${env.petstorePublicUrl}pet`,
+    errorUrl: `${env.petstorePublicUrl}pet/${'x'.repeat(20)}`,
     defects: {
       hsts: 'SEC-4: no Strict-Transport-Security header',
       nosniff: 'SEC-5: no X-Content-Type-Options header',
