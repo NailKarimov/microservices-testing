@@ -1,6 +1,0 @@
-GET http://localhost:8083/catalogue/size
-Query: {}
-Status: 200 (7 ms)
-Content-Type: application/json; charset=utf-8
-Body:
-{"size":9,"err":null}
