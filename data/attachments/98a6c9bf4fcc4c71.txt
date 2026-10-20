@@ -1,0 +1,6 @@
+GET http://localhost:8081/orders
+Query: {}
+Status: 500 (50 ms)
+Content-Type: application/json; charset=utf-8
+Body:
+{"message":"User not logged in.","error":{}}

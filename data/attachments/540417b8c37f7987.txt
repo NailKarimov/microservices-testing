@@ -1,7 +1,0 @@
-POST http://localhost:8087/cards
-Query: {}
-Request body: {"userID":"6ad5d699ee11cb0001420881","longNum":"4111111111111111","expires":"12/30","ccv":"123"}
-Status: 200 (3 ms)
-Content-Type: application/hal+json
-Body:
-{"id":"6ad5d699ee11cb0001420884"}

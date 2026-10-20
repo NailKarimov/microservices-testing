@@ -1,0 +1,7 @@
+POST http://localhost:8085/orders
+Query: {}
+Request body: {"customer":"http://user/customers/6ad723b0ee11cb0001ba9729","address":"http://user/addresses/6ad723b0ee11cb0001ba972a","card":"http://user/cards/6ad723b0ee11cb0001ba972b","items":"http://carts/carts/6ad723b0ee11cb0001ba9729/items"}
+Status: 406 (72 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{"timestamp":1792484272784,"status":406,"error":"Not Acceptable","exception":"works.weave.socks.orders.controllers.OrdersController$PaymentDeclinedException","message":"Payment declined: amount exceeds 100.00","path":"/orders"}
