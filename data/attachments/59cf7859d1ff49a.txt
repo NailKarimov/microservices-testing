@@ -1,0 +1,6 @@
+GET http://localhost:8082/health
+Query: {}
+Status: 200 (6 ms)
+Content-Type: application/json; charset=utf-8
+Body:
+{"health":[{"service":"payment","status":"OK","time":"2026-10-21 19:47:35.990312738 +0000 UTC"}]}
