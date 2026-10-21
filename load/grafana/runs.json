@@ -1,6 +1,18 @@
 [
  {
   "script": "catalogue-browse",
+  "profile": "stress",
+  "testid": "catalogue-browse-stress-2026-10-21-20-22-30",
+  "from": 1792614150878,
+  "to": 1792614289354,
+  "requests": 27064,
+  "rps": 199.7490234441511,
+  "p95": 0.9528816999999999,
+  "failed": 0,
+  "report": "catalogue-browse-stress-2026-10-21-20-22-30.k6.html"
+ },
+ {
+  "script": "catalogue-browse",
   "profile": "load",
   "testid": "catalogue-browse-load-2026-10-21-20-17-31",
   "from": 1792613851166,
