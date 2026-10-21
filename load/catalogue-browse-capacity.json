@@ -1,0 +1,161 @@
+{
+    "metrics": {
+        "vus_max": {
+            "value": 50,
+            "min": 50,
+            "max": 50
+        },
+        "dropped_iterations": {
+            "count": 0,
+            "rate": 0,
+            "thresholds": {
+                "count<1": false
+            }
+        },
+        "iterations": {
+            "count": 57750,
+            "rate": 469.78246698307504
+        },
+        "http_req_blocked": {
+            "p(90)": 0.003455,
+            "p(95)": 0.003966,
+            "avg": 0.0025214058874455793,
+            "min": 0.0005,
+            "med": 0.001923,
+            "max": 2.558097
+        },
+        "http_req_connecting": {
+            "max": 1.264388,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.00004285508225108224,
+            "min": 0,
+            "med": 0
+        },
+        "checks": {
+            "passes": 231000,
+            "fails": 0,
+            "value": 1
+        },
+        "vus": {
+            "value": 21,
+            "min": 0,
+            "max": 21
+        },
+        "http_reqs": {
+            "rate": 1879.1298679323002,
+            "count": 231000
+        },
+        "iteration_duration": {
+            "avg": 4.642782280450231,
+            "min": 1.367895,
+            "med": 1.7722665,
+            "max": 3953.607892,
+            "p(90)": 3.0742263999999997,
+            "p(95)": 14.331224849999925
+        },
+        "http_req_duration": {
+            "avg": 1.087308423043293,
+            "min": 0.139716,
+            "med": 0.402368,
+            "max": 3937.815472,
+            "p(90)": 0.6255835000000004,
+            "p(95)": 1.1162879499999987,
+            "thresholds": {
+                "p(95)<800": false
+            }
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(95)": 1.1162879499999987,
+            "avg": 1.087308423043293,
+            "min": 0.139716,
+            "med": 0.402368,
+            "max": 3937.815472,
+            "p(90)": 0.6255835000000004
+        },
+        "data_received": {
+            "count": 216488581,
+            "rate": 1761082.9377635545
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 231000,
+            "thresholds": {
+                "rate<0.05": false
+            },
+            "value": 0
+        },
+        "http_req_sending": {
+            "med": 0.005819,
+            "max": 6.578825,
+            "p(90)": 0.010285,
+            "p(95)": 0.011948,
+            "avg": 0.007296213896103593,
+            "min": 0.001432
+        },
+        "data_sent": {
+            "rate": 160195.82124122858,
+            "count": 19692750
+        },
+        "http_req_receiving": {
+            "p(90)": 0.036224,
+            "p(95)": 0.044217,
+            "avg": 0.027802028402597087,
+            "min": 0.005438,
+            "med": 0.024096,
+            "max": 7.472453
+        },
+        "http_req_waiting": {
+            "p(95)": 1.0592718999999993,
+            "avg": 1.0522101807445945,
+            "min": 0.118545,
+            "med": 0.3700745,
+            "max": 3937.789803,
+            "p(90)": 0.5822780000000002
+        },
+        "http_req_tls_handshaking": {
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0,
+            "min": 0,
+            "med": 0,
+            "max": 0
+        }
+    },
+    "root_group": {
+        "checks": {
+            "/catalogue/size → 200": {
+                "passes": 57750,
+                "fails": 0,
+                "name": "/catalogue/size → 200",
+                "path": "::/catalogue/size → 200",
+                "id": "14042a51b9845aa779110451e85082b8"
+            },
+            "/catalogue → 200": {
+                "fails": 0,
+                "name": "/catalogue → 200",
+                "path": "::/catalogue → 200",
+                "id": "a01c60027c45127aa38004de152eaf0a",
+                "passes": 57750
+            },
+            "/catalogue/{id} → 200": {
+                "fails": 0,
+                "name": "/catalogue/{id} → 200",
+                "path": "::/catalogue/{id} → 200",
+                "id": "32447cefffd601868e15caaca3f85582",
+                "passes": 57750
+            },
+            "/tags → 200": {
+                "name": "/tags → 200",
+                "path": "::/tags → 200",
+                "id": "c4f8548696a7896a81ddb1a852004e07",
+                "passes": 57750,
+                "fails": 0
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {}
+    }
+}
