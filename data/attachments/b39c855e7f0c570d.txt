@@ -1,7 +1,0 @@
-POST http://localhost:8087/register
-Query: {}
-Request body: {"username":"qa_mviixn3q4bu8u4","password":"secret123","email":"qa_mviixn3q4bu8u4@example.com"}
-Status: 200 (4 ms)
-Content-Type: application/hal+json
-Body:
-{"id":"6ad916d8ee11cb00016832f0"}
