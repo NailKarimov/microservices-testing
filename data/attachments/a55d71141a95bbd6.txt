@@ -1,6 +1,0 @@
-GET http://localhost:8081/tags
-Query: {}
-Status: 200 (49 ms)
-Content-Type: text/plain; charset=utf-8
-Body:
-{"tags":["brown","geek","formal","blue","skin","red","action","sport","black","magic","green"],"err":null}

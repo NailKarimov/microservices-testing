@@ -1,0 +1,6 @@
+GET http://localhost:8084/carts/6ad87635ee11cb0001a509dd/items
+Query: {}
+Status: 200 (7 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+[]
