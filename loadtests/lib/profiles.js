@@ -64,3 +64,6 @@ export function profile(tier) {
   if (!chosen) throw new Error(`Unknown PROFILE "${name}" for tier "${tier}": use smoke, load or stress`);
   return chosen;
 }
+
+/** Request params that name the endpoint in metrics (Prometheus label `name`, Grafana legend). */
+export const tag = (name) => ({ tags: { name } });

@@ -70,6 +70,9 @@ jobs:
         if: always()
         run: |
           cp docs/microservices.html allure-report/
+          for f in docs/*.html; do if [ -f "$f" ]; then cp "$f" allure-report/; fi; done
+          # Load-test dashboards are published by loadtest.yml; keep them when the Allure report replaces the site.
+          if [ -d gh-pages-old/load ]; then cp -r gh-pages-old/load allure-report/; fi
           true
 
       - name: Publish Allure report to GitHub Pages

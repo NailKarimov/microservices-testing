@@ -3,31 +3,31 @@
 // profile. Run from the repo root: `node scripts/run-k6.mjs catalogue-browse <smoke|load|stress>`.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { profile } from './lib/profiles.js';
+import { profile, tag } from './lib/profiles.js';
 
 const CATALOGUE_URL = __ENV.CATALOGUE_URL || 'http://catalogue';
 
 export const options = profile('catalogue');
 
 export default function () {
-  check(http.get(`${CATALOGUE_URL}/catalogue/size`), {
+  check(http.get(`${CATALOGUE_URL}/catalogue/size`, tag('GET /catalogue/size')), {
     '/catalogue/size → 200': (r) => r.status === 200,
   });
 
-  const list = http.get(`${CATALOGUE_URL}/catalogue?size=20`);
+  const list = http.get(`${CATALOGUE_URL}/catalogue?size=20`, tag('GET /catalogue'));
   const ok = check(list, { '/catalogue → 200': (r) => r.status === 200 });
 
   if (ok) {
     const socks = list.json();
     if (Array.isArray(socks) && socks.length > 0) {
       const sock = socks[Math.floor(Math.random() * socks.length)];
-      check(http.get(`${CATALOGUE_URL}/catalogue/${sock.id}`), {
+      check(http.get(`${CATALOGUE_URL}/catalogue/${sock.id}`, tag('GET /catalogue/{id}')), {
         '/catalogue/{id} → 200': (r) => r.status === 200,
       });
     }
   }
 
-  check(http.get(`${CATALOGUE_URL}/tags`), { '/tags → 200': (r) => r.status === 200 });
+  check(http.get(`${CATALOGUE_URL}/tags`, tag('GET /tags')), { '/tags → 200': (r) => r.status === 200 });
 
   sleep(1);
 }

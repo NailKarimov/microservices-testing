@@ -24,7 +24,11 @@
     "typecheck": "tsc --noEmit",
     "allure:generate": "node scripts/allure-prepare.mjs && allure generate allure-results -o allure-report --clean",
     "allure:open": "allure open allure-report",
-    "prepare": "husky"
+    "prepare": "husky",
+    "obs:up": "docker compose -f infra/observability/docker-compose.yml up -d",
+    "obs:down": "docker compose -f infra/observability/docker-compose.yml down -v",
+    "obs:dashboard": "node scripts/build-dashboard.mjs && prettier --write infra/observability/grafana/dashboards",
+    "obs:snapshots": "node scripts/grafana-snapshots.mjs"
   },
   "lint-staged": {
     "*.{ts,mjs,js}": [

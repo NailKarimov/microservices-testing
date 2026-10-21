@@ -1,0 +1,40 @@
+# Observability for the k6 load tests: k6 → Prometheus (remote write) → Grafana.
+#   npm run obs:up      Prometheus http://localhost:9090, Grafana http://localhost:3001 (anonymous, read-only)
+#   npm run obs:down
+# Both containers also join the Sock Shop network, so k6 (which runs there) reaches Prometheus as
+# http://prometheus:9090. Start the Sock Shop first (npm run stack:up): that network must exist.
+name: observability
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver # k6 pushes; nothing is scraped
+      - --enable-feature=native-histograms # k6 trends as native histograms: exact percentiles in PromQL
+      - --storage.tsdb.retention.time=7d
+    ports: ['9090:9090']
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks: [default, sock-shop]
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    depends_on: [prometheus]
+    ports: ['3001:3000']
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true' # a local, throw-away Grafana: viewers need no login
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/k6-sock-shop.json
+      GF_NEWS_NEWS_FEED_ENABLED: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks: [default, sock-shop]
+
+networks:
+  sock-shop:
+    external: true
+    name: sock-shop_default

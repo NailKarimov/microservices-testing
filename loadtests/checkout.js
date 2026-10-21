@@ -10,7 +10,7 @@
 // Run from the repo root: `node scripts/run-k6.mjs checkout <smoke|load|stress>`.
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { profile } from './lib/profiles.js';
+import { profile, tag } from './lib/profiles.js';
 
 const CATALOGUE_URL = __ENV.CATALOGUE_URL || 'http://catalogue';
 const CARTS_URL = __ENV.CARTS_URL || 'http://carts';
@@ -20,55 +20,76 @@ const USER_URL = __ENV.USER_URL || 'http://user';
 export const options = profile('checkout');
 
 const JSON_HEADERS = { headers: { 'Content-Type': 'application/json' } };
-const postJson = (url, body) => http.post(url, JSON.stringify(body), JSON_HEADERS);
+// `name` groups requests by endpoint in metrics: without it every customer id would be a separate series.
+const postJson = (url, body, name) => http.post(url, JSON.stringify(body), { ...JSON_HEADERS, ...tag(name) });
 
 function cheapestSock() {
-  const socks = http.get(`${CATALOGUE_URL}/catalogue?size=1000`).json();
+  const socks = http.get(`${CATALOGUE_URL}/catalogue?size=1000`, tag('GET /catalogue')).json();
   return socks.reduce((cheapest, sock) => (sock.price < cheapest.price ? sock : cheapest));
 }
 
 export default function () {
   const username = `k6_${__VU}_${__ITER}_${Date.now()}`;
-  const register = postJson(`${USER_URL}/register`, {
-    username,
-    password: 'secret123',
-    email: `${username}@example.com`,
-  });
+  const register = postJson(
+    `${USER_URL}/register`,
+    {
+      username,
+      password: 'secret123',
+      email: `${username}@example.com`,
+    },
+    'POST /register',
+  );
   if (!check(register, { 'register → 200': (r) => r.status === 200 })) return;
   const customerId = register.json('id');
 
-  const address = postJson(`${USER_URL}/addresses`, {
-    userID: customerId,
-    street: 'Load test',
-    number: '1',
-    country: 'LV',
-    city: 'Riga',
-    postcode: 'LV-1010',
-  });
-  const card = postJson(`${USER_URL}/cards`, {
-    userID: customerId,
-    longNum: '4111111111111111',
-    expires: '12/30',
-    ccv: '123',
-  });
+  const address = postJson(
+    `${USER_URL}/addresses`,
+    {
+      userID: customerId,
+      street: 'Load test',
+      number: '1',
+      country: 'LV',
+      city: 'Riga',
+      postcode: 'LV-1010',
+    },
+    'POST /addresses',
+  );
+  const card = postJson(
+    `${USER_URL}/cards`,
+    {
+      userID: customerId,
+      longNum: '4111111111111111',
+      expires: '12/30',
+      ccv: '123',
+    },
+    'POST /cards',
+  );
   if (!check(address, { 'address → 200': (r) => r.status === 200 })) return;
   if (!check(card, { 'card → 200': (r) => r.status === 200 })) return;
   const addressId = address.json('id');
   const cardId = card.json('id');
 
   const sock = cheapestSock();
-  const addedToCart = postJson(`${CARTS_URL}/carts/${customerId}/items`, {
-    itemId: sock.id,
-    unitPrice: sock.price,
-  });
+  const addedToCart = postJson(
+    `${CARTS_URL}/carts/${customerId}/items`,
+    {
+      itemId: sock.id,
+      unitPrice: sock.price,
+    },
+    'POST /carts/{id}/items',
+  );
   if (!check(addedToCart, { 'add to cart → 201': (r) => r.status === 201 })) return;
 
-  const order = postJson(`${ORDERS_URL}/orders`, {
-    customer: `http://user/customers/${customerId}`,
-    address: `http://user/addresses/${addressId}`,
-    card: `http://user/cards/${cardId}`,
-    items: `http://carts/carts/${customerId}/items`,
-  });
+  const order = postJson(
+    `${ORDERS_URL}/orders`,
+    {
+      customer: `http://user/customers/${customerId}`,
+      address: `http://user/addresses/${addressId}`,
+      card: `http://user/cards/${cardId}`,
+      items: `http://carts/carts/${customerId}/items`,
+    },
+    'POST /orders',
+  );
   check(order, { 'order → 201': (r) => r.status === 201 });
 
   sleep(1);
