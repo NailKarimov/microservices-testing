@@ -1,0 +1,7 @@
+POST http://localhost:8085/orders
+Query: {}
+Request body: {"customer":"http://user/customers/6ad91db2ee11cb0001a2482e","address":"http://user/addresses/6ad91db2ee11cb0001a2482f","card":"http://user/cards/6ad91db2ee11cb0001a24830","items":"http://carts/carts/6ad91db2ee11cb0001a2482e/items"}
+Status: 500 (43 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{"timestamp":1792613810488,"status":500,"error":"Internal Server Error","exception":"java.lang.IllegalStateException","message":"Unable to create order due to unspecified IO error.","path":"/orders"}
