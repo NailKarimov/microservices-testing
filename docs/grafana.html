@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en" data-default-lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sock Shop load in Grafana</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Public+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: a signal path. The pipeline from k6 to a PNG on Pages, a percentile mixer that shows why averages lie,
+   a closed-vs-open load calculator, a cardinality counter, the measured runs. */
+:root {
+  --bg: #eef0f4; --surface: #ffffff; --sunken: #e2e6ee; --ink: #141720; --muted: #5a6070; --line: #cfd4df;
+  --accent: #c2410c; --accent-soft: #fde5d6; --px: #0f6b73; --px-soft: #d5eeee;
+  --ok: #17784b; --ok-soft: #d8f1e3; --bad: #b42318; --bad-soft: #fbe1dd; --warn: #8a6100; --warn-soft: #f7ebc8;
+  --font-display: 'Bricolage Grotesque', 'Public Sans', system-ui, sans-serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101219; --surface: #181b24; --sunken: #20242f; --ink: #e8eaf1; --muted: #a0a6b5; --line: #2e3341;
+    --accent: #ff9a62; --accent-soft: #42220f; --px: #6fd3db; --px-soft: #0f3134;
+    --ok: #62d49a; --ok-soft: #12321f; --bad: #ff8a7d; --bad-soft: #3d1714; --warn: #f1c35a; --warn-soft: #3a2d0c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101219; --surface: #181b24; --sunken: #20242f; --ink: #e8eaf1; --muted: #a0a6b5; --line: #2e3341;
+  --accent: #ff9a62; --accent-soft: #42220f; --px: #6fd3db; --px-soft: #0f3134;
+  --ok: #62d49a; --ok-soft: #12321f; --bad: #ff8a7d; --bad-soft: #3d1714; --warn: #f1c35a; --warn-soft: #3a2d0c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--font-body); margin: 0; }
+body[data-lang="ru"] [lang="en"], body[data-lang="en"] [lang="ru"] { display: none !important; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; line-height: 1.1; margin: 0; }
+h1 { font-size: clamp(30px, 5vw, 50px); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(22px, 2.8vw, 30px); font-weight: 800; letter-spacing: -0.01em; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; max-width: 70ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+a { color: var(--accent); }
+button { font-family: var(--font-body); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.eyebrow { font: 500 12px/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 20px; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { font: 500 13px var(--font-mono); background: transparent; color: var(--muted); border: 0; padding: 6px 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.hero { display: grid; gap: 16px; padding-block: 8px; }
+.hero .lead { font-size: 18px; color: var(--muted); }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; color: var(--muted); }
+.facts b { font: 800 24px var(--font-display); color: var(--ink); margin-right: 6px; font-variant-numeric: tabular-nums; }
+section.station { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding-block: 52px 0; }
+section.station > header { display: grid; gap: 8px; }
+.num { font: 700 13px var(--font-mono); color: var(--accent); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { font: 500 13.5px var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.chips button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 780px) { .two { grid-template-columns: minmax(0, 1fr); } }
+pre.code { margin: 0; background: var(--sunken); border-radius: 8px; padding: 10px 12px; font: 400 12.5px/1.55 var(--font-mono); overflow-x: auto; white-space: pre; }
+.tag { font: 600 11px var(--font-mono); padding: 2px 7px; border-radius: 4px; display: inline-block; white-space: nowrap; }
+.tag.ok { background: var(--ok-soft); color: var(--ok); } .tag.bad { background: var(--bad-soft); color: var(--bad); }
+.tag.warn { background: var(--warn-soft); color: var(--warn); } .tag.ac { background: var(--accent-soft); color: var(--accent); }
+.tag.px { background: var(--px-soft); color: var(--px); }
+.state { border-radius: 12px; padding: 14px; display: grid; gap: 4px; font-size: 15px; }
+.state.ok { background: var(--ok-soft); } .state.bad { background: var(--bad-soft); } .state.warn { background: var(--warn-soft); }
+.state b { font-family: var(--font-display); font-size: 19px; }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 860px) { .pipe { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.node { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px; text-align: left; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 4px; position: relative; }
+.node b { font: 700 13px var(--font-mono); }
+.node span { font-size: 12.5px; color: var(--muted); }
+.node[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.ctl { display: grid; gap: 12px; }
+.ctl label { display: grid; gap: 4px; font-size: 13.5px; color: var(--muted); }
+.ctl label b { color: var(--ink); font-family: var(--font-mono); }
+.ctl input[type="range"] { width: 100%; accent-color: var(--accent); }
+.big { font: 800 34px var(--font-display); font-variant-numeric: tabular-nums; }
+.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; font-size: 14.5px; align-items: baseline; }
+.kv b { font: 700 15px var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+.runs-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table.runs { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+table.runs th, table.runs td { border-bottom: 1px solid var(--line); padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+table.runs th:first-child, table.runs td:first-child, table.runs th:nth-child(2), table.runs td:nth-child(2) { text-align: left; }
+table.runs thead th { font: 600 11.5px var(--font-mono); color: var(--muted); }
+.notes { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 860px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+dl.terms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
+@media (max-width: 760px) { dl.terms { grid-template-columns: minmax(0, 1fr); } }
+dl.terms div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+dt { font: 700 13.5px var(--font-mono); } dd { margin: 4px 0 0; font-size: 14.5px; color: var(--muted); }
+.cmds { display: grid; gap: 6px; grid-template-columns: minmax(0, 1fr); }
+.cmd { display: flex; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 14px; min-width: 0; }
+.cmd code { flex: 1; overflow-x: auto; white-space: nowrap; }
+.cmd button { font: 600 12px var(--font-mono); border: 1px solid var(--line); background: var(--sunken); color: var(--ink); border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+footer { padding-top: 48px; font-size: 14px; color: var(--muted); }
+</style>
+</head>
+<body data-lang="ru">
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">microservices-testing · k6 → Prometheus → Grafana</span>
+    <div class="seg" role="group" aria-label="Language">
+      <button type="button" id="lang-ru" data-l="ru" aria-pressed="true">RU</button>
+      <button type="button" id="lang-en" data-l="en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <section class="hero">
+    <h1 lang="ru">Нагрузка во времени: k6 в Grafana</h1>
+    <h1 lang="en">Load over time: k6 in Grafana</h1>
+    <p class="lead" lang="ru">Итог k6 говорит «сколько»: 27 088 запросов, p95 0.7 мс. Но не говорит «когда»: росла ли задержка вместе с нагрузкой, с какого числа пользователей пошли ошибки, медленной была первая минута или последняя. Для этого метрики хранятся как временные ряды в Prometheus и рисуются в Grafana, а после прогона панели сохраняются картинками на GitHub Pages.</p>
+    <p class="lead" lang="en">k6's summary says "how much": 27,088 requests, p95 0.7 ms. It doesn't say "when": did latency grow with the load, at what number of users did errors start, was the first minute slow or the last. For that the metrics are stored as time series in Prometheus and drawn in Grafana, and after the run the panels are saved as pictures on GitHub Pages.</p>
+    <div class="facts">
+      <span><b>11</b><span lang="ru">панелей, дашборд из кода</span><span lang="en">panels, dashboard as code</span></span>
+      <span><b>3 200</b><span lang="ru">req/s на пике capacity</span><span lang="en">req/s at the capacity peak</span></span>
+      <span><b>1.1 ms</b><span lang="ru">p95 при этом</span><span lang="en">p95 at that rate</span></span>
+      <span><b>0</b><span lang="ru">ошибок и пропущенных итераций</span><span lang="en">errors and dropped iterations</span></span>
+    </div>
+  </section>
+
+  <section class="station" aria-labelledby="g1">
+    <header>
+      <span class="num">01</span>
+      <h2 id="g1" lang="ru">Путь метрики</h2><h2 lang="en">The path of a metric</h2>
+      <p class="muted" lang="ru">Нажмите на звено, чтобы увидеть, что оно делает и как настроено.</p>
+      <p class="muted" lang="en">Click a stage to see what it does and how it is set up.</p>
+    </header>
+    <div class="pipe" id="pipe"></div>
+    <div class="panel" id="pipe-info" aria-live="polite"></div>
+  </section>
+
+  <section class="station" aria-labelledby="g2">
+    <header>
+      <span class="num">02</span>
+      <h2 id="g2" lang="ru">Почему перцентили нельзя усреднять</h2><h2 lang="en">Why percentiles can't be averaged</h2>
+      <p class="muted" lang="ru">Два эндпоинта: быстрый (p95 = 1 мс) и медленный (p95 = 100 мс). Двигайте долю медленных запросов и сравните «среднее двух p95» с настоящим p95 всех запросов. Нативные гистограммы хранят само распределение, поэтому Prometheus считает настоящий.</p>
+      <p class="muted" lang="en">Two endpoints: a fast one (p95 = 1 ms) and a slow one (p95 = 100 ms). Move the share of slow requests and compare "the average of two p95s" with the real p95 of all requests. Native histograms keep the distribution itself, so Prometheus computes the real one.</p>
+    </header>
+    <div class="two">
+      <div class="panel ctl"><label for="slow"><span lang="ru">Доля медленных запросов</span><span lang="en">Share of slow requests</span> <b id="slow-v"></b><input type="range" id="slow" min="0" max="30" step="1" value="3"></label></div>
+      <div class="panel kv" id="pct" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="station" aria-labelledby="g3">
+    <header>
+      <span class="num">03</span>
+      <h2 id="g3" lang="ru">Закрытая модель меряет сценарий, а не сервер</h2><h2 lang="en">A closed model measures the script, not the server</h2>
+      <p class="muted" lang="ru">В stress-профиле график запросов в секунду упёрся в 240 и стоял ровно. Это не предел каталога: каждый виртуальный пользователь делает 4 запроса и спит секунду. Посчитайте.</p>
+      <p class="muted" lang="en">In the stress profile the requests-per-second graph hit 240 and stayed flat. That's not the catalogue's limit: each virtual user makes 4 requests and sleeps a second. Do the maths.</p>
+    </header>
+    <div class="two">
+      <div class="panel ctl">
+        <label for="vus"><span lang="ru">Виртуальных пользователей</span><span lang="en">Virtual users</span> <b id="vus-v"></b><input type="range" id="vus" min="10" max="200" step="10" value="60"></label>
+        <label for="think"><span lang="ru">Пауза в итерации, мс</span><span lang="en">Think time per iteration, ms</span> <b id="think-v"></b><input type="range" id="think" min="0" max="2000" step="100" value="1000"></label>
+        <label for="srv"><span lang="ru">Время ответа сервера, мс</span><span lang="en">Server response time, ms</span> <b id="srv-v"></b><input type="range" id="srv" min="0.5" max="200" step="0.5" value="0.5"></label>
+      </div>
+      <div class="panel" id="model" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="station" aria-labelledby="g4">
+    <header>
+      <span class="num">04</span>
+      <h2 id="g4" lang="ru">Имя у каждого запроса</h2><h2 lang="en">A name for every request</h2>
+      <p class="muted" lang="ru">k6 метит запросы адресом. <code>/catalogue/3395a43e-…</code> для каждого носка и <code>/carts/&lt;id&gt;/items</code> для каждого нового покупателя — это отдельные временные ряды. Тег <code>name</code> сводит их к эндпоинтам.</p>
+      <p class="muted" lang="en">k6 labels requests by URL. <code>/catalogue/3395a43e-…</code> for every sock and <code>/carts/&lt;id&gt;/items</code> for every new customer are separate time series. The <code>name</code> tag folds them into endpoints.</p>
+    </header>
+    <div class="two">
+      <div class="panel ctl">
+        <label for="cust"><span lang="ru">Новых покупателей за прогон checkout</span><span lang="en">New customers in a checkout run</span> <b id="cust-v"></b><input type="range" id="cust" min="10" max="2000" step="10" value="600"></label>
+        <div class="chips" id="tag-chips" role="group" aria-label="Tags"></div>
+      </div>
+      <div class="panel" id="card" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section class="station" aria-labelledby="g5">
+    <header>
+      <span class="num">05</span>
+      <h2 id="g5" lang="ru">Что показали прогоны</h2><h2 lang="en">What the runs showed</h2>
+      <p class="muted" lang="ru">catalogue-browse на раннере GitHub (2 vCPU), 21.10.2026.</p>
+      <p class="muted" lang="en">catalogue-browse on a GitHub runner (2 vCPU), 21.10.2026.</p>
+    </header>
+    <div class="runs-wrap"><table class="runs" id="runs"></table></div>
+    <div class="notes" id="notes"></div>
+  </section>
+
+  <section class="station" aria-labelledby="g6">
+    <header><span class="num">06</span><h2 id="g6" lang="ru">Словарь и команды</h2><h2 lang="en">Terms and commands</h2></header>
+    <dl class="terms" id="terms"></dl>
+    <div class="cmds" id="cmds"></div>
+  </section>
+
+  <footer>
+    <span lang="ru">Панели каждого прогона: <a href="https://nailkarimov.github.io/microservices-testing/load/grafana/">nailkarimov.github.io/microservices-testing/load/grafana/</a> · текстом: <code>docs/grafana.md</code>.</span>
+    <span lang="en">Panels of every run: <a href="https://nailkarimov.github.io/microservices-testing/load/grafana/">nailkarimov.github.io/microservices-testing/load/grafana/</a> · as text: <code>docs/grafana.md</code>.</span>
+  </footer>
+</div>
+
+<script>
+const S = { lang: 'ru', node: 1, tags: 'url' };
+const L = (ru, en) => (S.lang === 'ru' ? ru : en);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const $ = (id) => document.getElementById(id);
+function chips(id, items, cur, key) {
+  $(id).innerHTML = items.map(([v, ru, en]) => `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(cur)}">${L(ru, en)}</button>`).join('');
+  $(id).onclick = (e) => { const b = e.target.closest('button'); if (!b) return; S[key] = b.dataset.v; renderAll(); };
+}
+
+const PIPE = [
+  ['k6', ['сценарий в контейнере', 'script in a container'], ['k6 запускается в контейнере в сети Sock Shop и ходит к сервисам по их именам (catalogue, carts…). Каждый запрос получает тег name (эндпоинт) и testid (прогон).', 'k6 runs in a container on the Sock Shop network and calls services by their names (catalogue, carts…). Every request gets a name tag (endpoint) and a testid (run).'], 'node scripts/run-k6.mjs catalogue-browse load  # OBSERVE=1'],
+  ['remote write', ['k6 толкает, Prometheus принимает', 'k6 pushes, Prometheus receives'], ['Вывод experimental-prometheus-rw отправляет метрики раз в 5 секунд. Длительности уходят нативными гистограммами, а не готовыми p95.', 'The experimental-prometheus-rw output sends metrics every 5 seconds. Durations go as native histograms, not ready-made p95s.'], 'K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true'],
+  ['Prometheus 3.5', ['хранит временные ряды', 'stores the time series'], ['Ничего не опрашивает: включены приёмник remote write и нативные гистограммы. PromQL считает точный перцентиль за любое окно.', 'Scrapes nothing: the remote-write receiver and native histograms are on. PromQL computes an exact percentile over any window.'], '--web.enable-remote-write-receiver --enable-feature=native-histograms'],
+  ['Grafana 12', ['дашборд из JSON', 'a dashboard from JSON'], ['Источник данных и дашборд заданы файлами провижининга. JSON генерируется скриптом: в ревью видно PromQL, а не 600 строк разметки. Анонимный просмотр.', 'The datasource and the dashboard come from provisioning files. The JSON is generated by a script, so a review shows PromQL, not 600 lines of layout. Anonymous viewing.'], 'node scripts/build-dashboard.mjs'],
+  ['Playwright', ['панели в PNG', 'panels as PNG'], ['Каждая панель открывается отдельно (/d-solo/…) ровно на время прогона и сохраняется картинкой. Плюс страница прогона и общий список.', 'Each panel is opened alone (/d-solo/…) for exactly the run\'s time span and saved as a picture. Plus a page per run and a list of runs.'], 'node scripts/grafana-snapshots.mjs'],
+  ['GitHub Pages', ['переживает раннер', 'outlives the runner'], ['Prometheus и Grafana исчезают вместе с машиной CI, картинки и HTML-отчёт k6 остаются в load/grafana/. Allure-отчёт при публикации сохраняет эту папку.', 'Prometheus and Grafana disappear with the CI machine; the pictures and k6\'s HTML report stay in load/grafana/. Publishing the Allure report keeps that folder.'], 'peaceiris/actions-gh-pages · destination_dir: load · keep_files: true'],
+];
+function renderPipe() {
+  $('pipe').innerHTML = PIPE.map((p, i) => `<button type="button" class="node" data-i="${i}" aria-pressed="${i === +S.node}"><b>${p[0]}</b><span>${L(...p[1])}</span></button>`).join('');
+  $('pipe').onclick = (e) => { const b = e.target.closest('[data-i]'); if (!b) return; S.node = b.dataset.i; renderAll(); };
+  const p = PIPE[+S.node];
+  $('pipe-info').innerHTML = `<h3>${p[0]}</h3><p class="muted">${L(...p[2])}</p><pre class="code">${esc(p[3])}</pre>`;
+}
+
+/* 02: fast ~ N(0.6, sd) with p95 1 ms; slow with p95 100 ms. Use quantile of mixture by sampling a fixed grid. */
+function mixtureP95(share) {
+  // fast: uniform 0.2..1.04 ms (p95 = 1.0), slow: uniform 60..102 ms (p95 = 100)
+  const xs = [];
+  const n = 2000, ns = Math.round(n * share), nf = n - ns;
+  for (let i = 0; i < nf; i++) xs.push(0.2 + (0.84 * i) / nf);
+  for (let i = 0; i < ns; i++) xs.push(60 + (42 * i) / Math.max(1, ns));
+  xs.sort((a, b) => a - b);
+  return xs[Math.floor(0.95 * (xs.length - 1))];
+}
+function renderPct() {
+  const share = +$('slow').value / 100;
+  $('slow-v').textContent = `${Math.round(share * 100)} %`;
+  const avg = (1 + 100) / 2, real = mixtureP95(share);
+  $('pct').innerHTML = `<span>${L('Среднее двух p95', 'Average of two p95s')}</span><b>${avg.toFixed(1)} ms</b><span>${L('Настоящий p95 всех запросов', 'Real p95 of all requests')}</span><b>${real.toFixed(1)} ms</b>` +
+    `<span class="muted" style="grid-column:1/-1">${share < 0.05 ? L('Медленных меньше 5 %: настоящий p95 — у быстрого эндпоинта, около 1 мс. Среднее завышает в десятки раз.', 'Under 5 % slow: the real p95 is the fast endpoint\'s, about 1 ms. The average overstates it many times.') : L('Медленных больше 5 %: p95 уже среди медленных. Среднее занижает.', 'Over 5 % slow: p95 is now among the slow ones. The average understates it.')}</span>`;
+}
+
+/* 03 */
+function renderModel() {
+  const vus = +$('vus').value, think = +$('think').value, srv = +$('srv').value;
+  $('vus-v').textContent = vus; $('think-v').textContent = `${think} ms`; $('srv-v').textContent = `${srv} ms`;
+  const iter = think + 4 * srv; // ms
+  const rps = iter > 0 ? (vus * 4 * 1000) / iter : Infinity;
+  $('model').innerHTML = `<span class="muted">${L('Потолок закрытой модели', 'Ceiling of the closed model')}</span><span class="big">${isFinite(rps) ? Math.round(rps).toLocaleString('en') : '∞'} req/s</span>` +
+    `<p class="muted">${L(`VUs × 4 запроса ÷ (пауза + 4 × ответ) = ${vus} × 4 ÷ ${(iter / 1000).toFixed(3)} с. Даже если сервер станет вдвое медленнее, при паузе в секунду число почти не изменится — график не покажет проблему.`, `VUs × 4 requests ÷ (think time + 4 × response) = ${vus} × 4 ÷ ${(iter / 1000).toFixed(3)} s. Even if the server got twice as slow, with a one-second pause the number would hardly change: the graph would not show the problem.`)}</p>` +
+    `<p>${L('Открытая модель (ramping-arrival-rate) задаёт скорость прихода итераций сама и не ждёт ответов: если сервер не успевает, k6 пишет пропущенные итерации. Профиль capacity дошёл до 800 итераций/с (≈ 3 200 req/s): p95 1.1 мс, ни одной пропущенной.', 'An open model (ramping-arrival-rate) sets the arrival rate itself and doesn\'t wait for answers: if the server can\'t keep up, k6 records dropped iterations. The capacity profile reached 800 iterations/s (≈ 3,200 req/s): p95 1.1 ms, none dropped.')}</p>`;
+}
+
+/* 04 */
+function renderCard() {
+  chips('tag-chips', [['url', 'Метка по URL (по умолчанию)', 'Label by URL (default)'], ['name', 'Тег name', 'name tag']], S.tags, 'tags');
+  const c = +$('cust').value; $('cust-v').textContent = c;
+  const socks = 9; const metrics = 7; // trends/counters per request
+  const series = S.tags === 'url' ? (socks + 1 + 3 * c + 2) * metrics : 7 * metrics;
+  $('card').innerHTML = `<span class="muted">${L('Временных рядов на метрики запросов', 'Time series for request metrics')}</span><span class="big">${series.toLocaleString('en')}</span>` +
+    `<p class="muted">${S.tags === 'url' ? L(`Каждый покупатель даёт свои /carts/{id}/items, /customers/{id}, /addresses… умножьте на 7 метрик на запрос. Легенда графика превращается в список из тысяч строк.`, `Every customer brings its own /carts/{id}/items, /customers/{id}, /addresses… times 7 metrics per request. The graph legend becomes a list of thousands.`) : L('7 эндпоинтов × 7 метрик, сколько бы покупателей ни было: tag("POST /carts/{id}/items").', '7 endpoints × 7 metrics, however many customers: tag("POST /carts/{id}/items").')}</p>`;
+}
+
+/* 05 */
+const RUNS = [
+  ['load', ['закрытая, 20 VUs', 'closed, 20 VUs'], '9 032', '67', '0.70', '1.18', '0'],
+  ['stress', ['закрытая, 60 VUs', 'closed, 60 VUs'], '27 088', ['240 (полка)', '240 (plateau)'], '0.41', '0.71', '0'],
+  ['capacity', ['открытая, 50 → 800 итераций/с', 'open, 50 → 800 iterations/s'], '231 000', ['1 879, пик ≈ 3 200', '1,879, peak ≈ 3,200'], '0.40', '1.10', ['0, пропущено 0', '0, none dropped']],
+];
+function renderRuns() {
+  const v = (x) => (Array.isArray(x) ? L(...x) : x);
+  $('runs').innerHTML = `<thead><tr><th>${L('профиль', 'profile')}</th><th>${L('модель', 'model')}</th><th>${L('запросов', 'requests')}</th><th>req/s</th><th>p50, ms</th><th>p95, ms</th><th>${L('ошибок', 'failed')}</th></tr></thead><tbody>` +
+    RUNS.map((r) => `<tr><td><b>${r[0]}</b></td><td>${L(...r[1])}</td><td>${r[2]}</td><td>${v(r[3])}</td><td>${r[4]}</td><td>${r[5]}</td><td>${v(r[6])}</td></tr>`).join('') + '</tbody>';
+  const N = [
+    [['Полка — это сценарий', 'The plateau is the script'], ['240 req/s в stress = 60 × 4 ÷ ~1 с паузы. Закрытая модель не может отправить больше.', '240 req/s in stress = 60 × 4 ÷ ~1 s of think time. A closed model cannot send more.']],
+    [['Каталог не сломался', 'The catalogue did not break'], ['≈ 3 200 req/s, p95 1.1 мс. Чтобы найти предел, нужна машина мощнее той, что даёт нагрузку.', '≈ 3,200 req/s, p95 1.1 ms. Finding the limit needs a machine bigger than the one generating the load.']],
+    [['Всплеск в конце — шум', 'The spike at the end is noise'], ['p99 прыгает до 12 мс (stress) и 3.9 с (capacity) в последние 5 секунд, когда запросов почти нет: один медленный и есть p99. Смотрите на частоту запросов в том же окне.', 'p99 jumps to 12 ms (stress) and 3.9 s (capacity) in the last 5 seconds, when there are almost no requests: one slow request is the p99. Check the request rate in the same window.']],
+  ];
+  $('notes').innerHTML = N.map((n) => `<div class="panel"><h3>${L(...n[0])}</h3><p class="muted">${L(...n[1])}</p></div>`).join('');
+}
+
+const TERMS = [
+  ['native histogram', ['Гистограмма Prometheus с автоматическими корзинами: хранит распределение, из которого считается любой перцентиль.', 'A Prometheus histogram with automatic buckets: it keeps the distribution any percentile can be computed from.']],
+  ['remote write', ['Протокол, по которому клиент сам отправляет метрики в Prometheus, вместо того чтобы Prometheus их опрашивал.', 'The protocol by which a client pushes metrics to Prometheus instead of Prometheus scraping them.']],
+  ['closed / open model', ['Закрытая: фиксированное число пользователей ждёт ответов. Открытая: запросы приходят с заданной скоростью, как настоящие посетители.', 'Closed: a fixed number of users wait for answers. Open: requests arrive at a set rate, like real visitors.']],
+  ['cardinality', ['Число разных комбинаций меток = число временных рядов. Идентификаторы в метках его взрывают.', 'The number of distinct label combinations = the number of time series. Ids in labels blow it up.']],
+];
+function renderTerms() { $('terms').innerHTML = TERMS.map((t) => `<div><dt>${esc(t[0])}</dt><dd>${L(...t[1])}</dd></div>`).join(''); }
+const CMDS = ['npm run stack:up && npm run obs:up', 'OBSERVE=1 node scripts/run-k6.mjs catalogue-browse load', 'node scripts/run-k6.mjs catalogue-browse capacity', 'node scripts/grafana-snapshots.mjs', 'npm run obs:dashboard'];
+function renderCmds() { $('cmds').innerHTML = CMDS.map((c, i) => `<div class="cmd"><code id="cmd-${i}">${esc(c)}</code><button type="button" data-c="${i}">${L('Копировать', 'Copy')}</button></div>`).join(''); }
+$('cmds').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-c]'); if (!b) return;
+  const done = () => { b.textContent = L('Скопировано', 'Copied'); setTimeout(() => (b.textContent = L('Копировать', 'Copy')), 1500); };
+  const fallback = () => { const r = document.createRange(); r.selectNodeContents($('cmd-' + b.dataset.c)); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  try { navigator.clipboard.writeText(CMDS[+b.dataset.c]).then(done, fallback); } catch (err) { fallback(); }
+});
+['slow'].forEach((id) => $(id).addEventListener('input', renderPct));
+['vus', 'think', 'srv'].forEach((id) => $(id).addEventListener('input', renderModel));
+$('cust').addEventListener('input', renderCard);
+
+function renderAll() { renderPipe(); renderPct(); renderModel(); renderCard(); renderRuns(); renderTerms(); renderCmds(); }
+function setLang(l) {
+  S.lang = l; document.body.dataset.lang = l; document.documentElement.lang = l;
+  $('lang-ru').setAttribute('aria-pressed', l === 'ru');
+  $('lang-en').setAttribute('aria-pressed', l === 'en');
+  try { localStorage.setItem('grafana-lang', l); } catch (e) {}
+  renderAll();
+}
+document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.l)));
+let start = document.documentElement.dataset.defaultLang || 'ru';
+try { start = localStorage.getItem('grafana-lang') || start; } catch (e) {}
+setLang(start);
+</script>
+</body>
+</html>
