@@ -126,7 +126,7 @@ footer { padding-top: 48px; font-size: 14px; color: var(--muted); }
       <span><b>11</b><span lang="ru">панелей, дашборд из кода</span><span lang="en">panels, dashboard as code</span></span>
       <span><b>3 200</b><span lang="ru">req/s на пике capacity</span><span lang="en">req/s at the capacity peak</span></span>
       <span><b>1.1 ms</b><span lang="ru">p95 при этом</span><span lang="en">p95 at that rate</span></span>
-      <span><b>0</b><span lang="ru">ошибок и пропущенных итераций</span><span lang="en">errors and dropped iterations</span></span>
+      <span><b>≈ 2 400</b><span lang="ru">req/s: здесь каталог сломался</span><span lang="en">req/s: where the catalogue broke</span></span>
     </div>
   </section>
 
@@ -261,7 +261,7 @@ function renderModel() {
   const rps = iter > 0 ? (vus * 4 * 1000) / iter : Infinity;
   $('model').innerHTML = `<span class="muted">${L('Потолок закрытой модели', 'Ceiling of the closed model')}</span><span class="big">${isFinite(rps) ? Math.round(rps).toLocaleString('en') : '∞'} req/s</span>` +
     `<p class="muted">${L(`VUs × 4 запроса ÷ (пауза + 4 × ответ) = ${vus} × 4 ÷ ${(iter / 1000).toFixed(3)} с. Даже если сервер станет вдвое медленнее, при паузе в секунду число почти не изменится — график не покажет проблему.`, `VUs × 4 requests ÷ (think time + 4 × response) = ${vus} × 4 ÷ ${(iter / 1000).toFixed(3)} s. Even if the server got twice as slow, with a one-second pause the number would hardly change: the graph would not show the problem.`)}</p>` +
-    `<p>${L('Открытая модель (ramping-arrival-rate) задаёт скорость прихода итераций сама и не ждёт ответов: если сервер не успевает, k6 пишет пропущенные итерации. Профиль capacity дошёл до 800 итераций/с (≈ 3 200 req/s): p95 1.1 мс, ни одной пропущенной.', 'An open model (ramping-arrival-rate) sets the arrival rate itself and doesn\'t wait for answers: if the server can\'t keep up, k6 records dropped iterations. The capacity profile reached 800 iterations/s (≈ 3,200 req/s): p95 1.1 ms, none dropped.')}</p>`;
+    `<p>${L('Открытая модель (ramping-arrival-rate) задаёт скорость прихода итераций сама и не ждёт ответов: если сервер не успевает, k6 пишет пропущенные итерации. Профиль capacity в одном прогоне дошёл до ≈ 3 200 req/s без ошибок, в другом сломал каталог на ≈ 2 400 req/s.', 'An open model (ramping-arrival-rate) sets the arrival rate itself and doesn\'t wait for answers: if the server can\'t keep up, k6 records dropped iterations. The capacity profile reached ≈ 3,200 req/s without errors in one run and broke the catalogue at ≈ 2,400 req/s in another.')}</p>`;
 }
 
 /* 04 */
@@ -278,7 +278,8 @@ function renderCard() {
 const RUNS = [
   ['load', ['закрытая, 20 VUs', 'closed, 20 VUs'], '9 032', '67', '0.70', '1.18', '0'],
   ['stress', ['закрытая, 60 VUs', 'closed, 60 VUs'], '27 088', ['240 (полка)', '240 (plateau)'], '0.41', '0.71', '0'],
-  ['capacity', ['открытая, 50 → 800 итераций/с', 'open, 50 → 800 iterations/s'], '231 000', ['1 879, пик ≈ 3 200', '1,879, peak ≈ 3,200'], '0.40', '1.10', ['0, пропущено 0', '0, none dropped']],
+  ['capacity №1', ['открытая, 50 → 800 итераций/с', 'open, 50 → 800 iterations/s'], '231 000', ['1 879, пик ≈ 3 200', '1,879, peak ≈ 3,200'], '0.40', '1.10', ['0, пропущено 0', '0, none dropped']],
+  ['capacity №2', ['та же, через полчаса', 'the same, half an hour later'], '199 161', ['сломался на ≈ 2 400', 'broke at ≈ 2,400'], '0.56', '8.85', ['42 %, пропущено 1 030', '42 %, 1,030 dropped']],
 ];
 function renderRuns() {
   const v = (x) => (Array.isArray(x) ? L(...x) : x);
@@ -286,7 +287,7 @@ function renderRuns() {
     RUNS.map((r) => `<tr><td><b>${r[0]}</b></td><td>${L(...r[1])}</td><td>${r[2]}</td><td>${v(r[3])}</td><td>${r[4]}</td><td>${r[5]}</td><td>${v(r[6])}</td></tr>`).join('') + '</tbody>';
   const N = [
     [['Полка — это сценарий', 'The plateau is the script'], ['240 req/s в stress = 60 × 4 ÷ ~1 с паузы. Закрытая модель не может отправить больше.', '240 req/s in stress = 60 × 4 ÷ ~1 s of think time. A closed model cannot send more.']],
-    [['Каталог не сломался', 'The catalogue did not break'], ['≈ 3 200 req/s, p95 1.1 мс. Чтобы найти предел, нужна машина мощнее той, что даёт нагрузку.', '≈ 3,200 req/s, p95 1.1 ms. Finding the limit needs a machine bigger than the one generating the load.']],
+    [['Со второй попытки каталог сломался', 'The catalogue broke on the second try'], ['Первый прогон: ≈ 3 200 req/s без ошибок. Второй: на ≈ 2 400 req/s ответы за секунды сменились с 200 на 500 у всего, что читает catalogue-db, и до конца не восстановились. Предел нестабилен — один зелёный прогон ничего не доказывает.', 'Run one: ≈ 3,200 req/s with no errors. Run two: at ≈ 2,400 req/s answers flipped from 200 to 500 within seconds for everything reading catalogue-db, and never recovered. The limit is unstable: one green run proves nothing.']],
     [['Всплеск в конце — шум', 'The spike at the end is noise'], ['p99 прыгает до 12 мс (stress) и 3.9 с (capacity) в последние 5 секунд, когда запросов почти нет: один медленный и есть p99. Смотрите на частоту запросов в том же окне.', 'p99 jumps to 12 ms (stress) and 3.9 s (capacity) in the last 5 seconds, when there are almost no requests: one slow request is the p99. Check the request rate in the same window.']],
   ];
   $('notes').innerHTML = N.map((n) => `<div class="panel"><h3>${L(...n[0])}</h3><p class="muted">${L(...n[1])}</p></div>`).join('');
