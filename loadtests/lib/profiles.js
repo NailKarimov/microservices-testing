@@ -32,6 +32,31 @@ const TIERS = {
       // Deliberately beyond comfortable capacity: these record degradation, they do not gate a release.
       thresholds: { http_req_duration: ['p(95)<2000'], http_req_failed: ['rate<0.2'] },
     },
+    // Open model: k6 starts iterations at a set rate whether or not earlier ones finished, the way real visitors
+    // arrive. The closed profiles above can never send more than VUs × requests ÷ think time; this one keeps
+    // raising the rate until the service (or the runner) gives in. No think time (see catalogue-browse.js).
+    capacity: {
+      scenarios: {
+        capacity: {
+          executor: 'ramping-arrival-rate',
+          startRate: 50,
+          timeUnit: '1s',
+          preAllocatedVUs: 50,
+          maxVUs: 300,
+          stages: [
+            { duration: '30s', target: 200 },
+            { duration: '60s', target: 800 },
+            { duration: '30s', target: 800 },
+          ],
+        },
+      },
+      // Recorded, not gating: where p95 crosses the SLO is the finding.
+      thresholds: {
+        http_req_duration: ['p(95)<800'],
+        http_req_failed: ['rate<0.05'],
+        dropped_iterations: ['count<1'],
+      },
+    },
   },
   checkout: {
     smoke: {

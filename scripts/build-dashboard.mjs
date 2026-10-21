@@ -188,6 +188,25 @@ const panels = [
     { h: 8, w: 12, x: 12, y: 21 },
     { min: 0 },
   ),
+  series(
+    'Iterations started vs dropped (open model)',
+    [
+      target(`sum(rate(k6_iterations_total${T}[$__rate_interval]))`, 'completed iterations/s', 'A'),
+      target(
+        `sum(rate(k6_dropped_iterations_total${T}[$__rate_interval])) or vector(0)`,
+        'dropped iterations/s',
+        'B',
+      ),
+    ],
+    'short',
+    { h: 8, w: 24, x: 0, y: 29 },
+    {
+      min: 0,
+      calcs: ['mean', 'max'],
+      description:
+        'In the capacity profile k6 starts iterations at a set rate. Dropped ones mean k6 ran out of VUs: the system could not keep up.',
+    },
+  ),
 ];
 
 const dashboard = {

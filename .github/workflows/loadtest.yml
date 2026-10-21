@@ -14,7 +14,7 @@ on:
       profile:
         description: 'Profile'
         type: choice
-        options: [smoke, load, stress]
+        options: [smoke, load, stress, capacity]
         default: load
       observe:
         description: 'Send metrics to Prometheus and publish Grafana panels'

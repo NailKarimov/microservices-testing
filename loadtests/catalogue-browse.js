@@ -29,5 +29,6 @@ export default function () {
 
   check(http.get(`${CATALOGUE_URL}/tags`, tag('GET /tags')), { '/tags → 200': (r) => r.status === 200 });
 
-  sleep(1);
+  // A person pauses between pages; the open-model capacity profile sets the arrival rate itself instead.
+  if (__ENV.PROFILE !== 'capacity') sleep(1);
 }
