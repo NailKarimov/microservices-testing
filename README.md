@@ -27,8 +27,9 @@ plan: [`docs/test-plan.md`](docs/test-plan.md). Visual walkthrough from preparin
 `loadtest.yml` (by hand, and every Monday) runs k6 with Prometheus and Grafana next to the Sock Shop, then saves
 every panel of the dashboard as a picture: [load/grafana/](https://nailkarimov.github.io/microservices-testing/load/grafana/).
 Findings: the 240 req/s plateau of the stress profile is the script's think time, not the server (a closed model
-cannot send more than VUs ÷ iteration time); with the open-model capacity profile the catalogue held ≈ 3 200 req/s
-at p95 1.1 ms with no dropped iterations. Details: [`docs/grafana.md`](docs/grafana.md) · visual guide:
+cannot send more than VUs ÷ iteration time); with the open-model capacity profile the catalogue held ≈ 3 200 req/s in
+one run and broke at ≈ 2 400 req/s in the next (500s on every database-backed endpoint, 42 % failed): the limit is
+real and not stable. Details: [`docs/grafana.md`](docs/grafana.md) · visual guide:
 [`docs/grafana.html`](https://nailkarimov.github.io/microservices-testing/grafana.html).
 
 ## Running it

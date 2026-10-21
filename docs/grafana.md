@@ -66,8 +66,13 @@ Runs on a GitHub runner (2 vCPU), catalogue-browse:
   imitate a person) = 240 req/s, exactly the flat line on "Requests per second". A closed model can never send
   more than VUs ÷ iteration time, so it measured the script, not the catalogue. That is why the open-model
   `capacity` profile exists: k6 starts iterations at a set rate (`ramping-arrival-rate`), with no think time.
-- **The catalogue did not break.** At ≈ 3 200 req/s p95 stayed at 1.1 ms and no iteration was dropped; on this
-  runner the limit was not reached. Going further needs a bigger machine than the one generating the load.
+- **The catalogue broke on the second try.** In the first capacity run it held ≈ 3 200 req/s at p95 1.1 ms. In
+  the second, at ≈ 2 400 req/s, "Requests per second, by status" flips from 200 to 500 within seconds: almost
+  every call that reads `catalogue-db` (`/catalogue`, `/catalogue/size`, `/tags`) fails, "Iterations started vs
+  dropped" shows k6 out of VUs for a moment, and the errors do not stop while the load continues. All
+  database-backed endpoints failing together points at the MySQL connection limit; the service log is in the
+  job's "Sock Shop logs" step. Two runs, two answers: the limit is near 2 400–3 200 req/s on a 2-vCPU runner and
+  not stable, which is exactly why a single green capacity run proves little (`docs/test-report.md`, OBS-22).
 - **A spike at the very end is noise.** Every run ends with p99 jumping (to 12 ms in stress, to 3.9 s in
   capacity) in the last 5 s window, while the whole-run p95 is ~1 ms. In that window k6 is stopping and a few
   requests remain, so one slow request _is_ the p99. A percentile of a tiny sample says little; check the request
