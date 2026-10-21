@@ -69,9 +69,14 @@ jobs:
         continue-on-error: true # thresholds may fail; the dashboard of a failing run matters most
         run: node scripts/run-k6.mjs "$SCRIPT" "$PROFILE"
 
-      - name: Grafana panels as PNG
+      - name: Grafana panels as PNG (and the list of earlier runs)
         if: env.OBSERVE == '1'
-        run: node scripts/grafana-snapshots.mjs
+        run: |
+          mkdir -p loadtests-results/grafana
+          git fetch origin gh-pages --depth=1 2>/dev/null \
+            && git show origin/gh-pages:load/grafana/runs.json > loadtests-results/grafana/runs.json 2>/dev/null \
+            || rm -f loadtests-results/grafana/runs.json
+          node scripts/grafana-snapshots.mjs
 
       - name: Summary
         if: always()
@@ -84,7 +89,7 @@ jobs:
               console.log(`## k6: ${process.argv[2]} (${process.argv[3]})\n`);
               console.log(`| Requests | p50 | p95 | max | failed |\n|---:|---:|---:|---:|---:|`);
               console.log(`| ${m.http_reqs.count} | ${d.med.toFixed(0)} ms | ${d["p(95)"].toFixed(0)} ms | ${d.max.toFixed(0)} ms | ${(f.value * 100).toFixed(2)} % |`);
-              console.log(`\nGrafana panels and the k6 HTML report: https://nailkarimov.github.io/microservices-testing/load/grafana/`);
+              console.log(`\nGrafana panels and the k6 HTML report of every run: https://nailkarimov.github.io/microservices-testing/load/grafana/`);
             ' "$f" "$SCRIPT" "$PROFILE" >> "$GITHUB_STEP_SUMMARY"
           fi
 
