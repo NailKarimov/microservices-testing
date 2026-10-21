@@ -1,0 +1,14 @@
+[
+ {
+  "script": "catalogue-browse",
+  "profile": "load",
+  "testid": "catalogue-browse-load-2026-10-21-20-17-31",
+  "from": 1792613851166,
+  "to": 1792613988127,
+  "requests": 9028,
+  "rps": 66.56614084464266,
+  "p95": 1.3330541999999999,
+  "failed": 0,
+  "report": "catalogue-browse-load-2026-10-21-20-17-31.k6.html"
+ }
+]
