@@ -50,6 +50,9 @@ const result = spawnSync(
     '-i',
     '--network',
     NETWORK,
+    // Run as the current user: the k6 image's own user cannot write into a results folder the CI runner owns.
+    '--user',
+    `${process.getuid()}:${process.getgid()}`,
     '-e',
     `PROFILE=${profile}`,
     '-e',
