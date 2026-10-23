@@ -1,4 +1,6 @@
-# Test plan — Sock Shop microservices
+# Test plan: Sock Shop microservices (microservices-testing)
+
+The structure follows ISO/IEC/IEEE 29119-3 (test plan), shortened. The second part covers load testing.
 
 ## 1. Context
 

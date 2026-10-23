@@ -1,7 +1,23 @@
-# Test summary report — Sock Shop microservices
+# Test summary report: Sock Shop microservices (microservices-testing)
 
-- **Date:** 14.10.2026
-- **System under test:** Sock Shop (13 containers) started with Docker Compose on the test machine / CI runner
+The structure follows ISO/IEC/IEEE 29119-3 (test completion report), shortened. It has three parts: functional
+and fault tests, OWASP, and load tests with k6.
+
+- **Period:** 14.10.2026 – 23.10.2026
+- **System under test:** Sock Shop (13 containers), started with Docker Compose on a GitHub Actions runner
+- **Allure report:** https://nailkarimov.github.io/microservices-testing/; load panels under `…/load/grafana/`
+
+## Latest run (23.10.2026)
+
+| Metric                          | Value                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------- |
+| Tests run                       | 94                                                                                |
+| Passed / failed / skipped       | 93 / 0 / 1                                                                        |
+| Expected failures (`test.fail`) | 31 tests pinning 18 defects (SS-1…SS-18); each turns red when its defect is fixed |
+| Duration                        | ~46 s, after the stack is up                                                      |
+| Load (Mondays, k6 → Grafana)    | see part 3 and `docs/grafana.md`                                                  |
+
+The original pass from 14.10.2026 follows.
 
 ## 1. Summary
 
