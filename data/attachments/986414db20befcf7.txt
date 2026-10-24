@@ -1,6 +1,0 @@
-GET http://localhost:8087/customers/6adb98ccee11cb0001c11950/addresses
-Query: {}
-Status: 200 (4 ms)
-Content-Type: application/hal+json
-Body:
-{"_embedded":{"address":[{"street":"Brivibas","number":"1","country":"Latvia","city":"Riga","postcode":"LV-1010","id":"6adb98ccee11cb0001c11951","_links":{"address":{"href":"http://user/addresses/6adb98ccee11cb0001c11951"},"self":{"href":"http://user/addresses/6adb98ccee11cb0001c11951"}}}]}}
