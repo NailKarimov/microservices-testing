@@ -1,7 +1,7 @@
 name: Bug report
 description: A defect in the system under test, written to the same layout as the issues in this repository.
-title: "[ID] Short summary of what is wrong"
-labels: ["bug"]
+title: '[ID] Short summary of what is wrong'
+labels: ['bug']
 body:
   - type: markdown
     attributes:
