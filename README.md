@@ -42,6 +42,8 @@ with every service on its own port.
 
 ## Findings
 
+Each defect is also a bug report in [Issues](https://github.com/NailKarimov/microservices-testing/issues?q=is%3Aissue+label%3Abug), with steps, expected and actual results, severity and a link to the test that pins it.
+
 - **18 defects, SS-1 to SS-18:**
   - 500 for every invalid payment amount;
   - card data handling;
