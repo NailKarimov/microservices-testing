@@ -1,6 +1,0 @@
-GET http://localhost:8087/login
-Query: {}
-Status: 200 (3 ms)
-Content-Type: application/hal+json
-Body:
-{"user":{"firstName":"","lastName":"","username":"qa_mvpeecj9dh16cd","id":"6adf6e74ee11cb0001fc61ef","_links":{"addresses":{"href":"http://user/customers/6adf6e74ee11cb0001fc61ef/addresses"},"cards":{"href":"http://user/customers/6adf6e74ee11cb0001fc61ef/cards"},"customer":{"href":"http://user/customers/6adf6e74ee11cb0001fc61ef"},"self":{"href":"http://user/customers/6adf6e74ee11cb0001fc61ef"}}}}

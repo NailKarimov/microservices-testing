@@ -1,0 +1,5 @@
+DELETE http://localhost:8084/carts/6adf70bbee11cb0001ae6eec
+Query: {}
+Status: 202 (17 ms)
+Content-Type: 
+Body:
