@@ -4,6 +4,7 @@
 [![Load tests](https://github.com/NailKarimov/microservices-testing/actions/workflows/loadtest.yml/badge.svg)](https://github.com/NailKarimov/microservices-testing/actions/workflows/loadtest.yml)
 [![Allure report](https://img.shields.io/badge/report-Allure-orange)](https://nailkarimov.github.io/microservices-testing/)
 [![Release](https://img.shields.io/github/v/release/NailKarimov/microservices-testing)](https://github.com/NailKarimov/microservices-testing/releases)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/NailKarimov/microservices-testing?quickstart=1)
 
 ### ▶ Open online
 
@@ -57,6 +58,8 @@ Each defect is also a bug report in [Issues](https://github.com/NailKarimov/micr
   and broke at ≈ 2 400 req/s in the next: 500s on every database-backed endpoint, and 42 % of requests failed.
 
 ## Running it
+
+No local setup: the **Open in GitHub Codespaces** badge starts a browser VS Code with this repository, its tools and Docker; the container runs `npm ci` on creation, then `npm run stack:up && npm test` works in the terminal.
 
 Requirements: Node.js 22+, Docker with ~3 GB for the images, Java 17+ for a local Allure report.
 
