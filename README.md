@@ -4,6 +4,17 @@
 [![Load tests](https://github.com/NailKarimov/microservices-testing/actions/workflows/loadtest.yml/badge.svg)](https://github.com/NailKarimov/microservices-testing/actions/workflows/loadtest.yml)
 [![Allure report](https://img.shields.io/badge/report-Allure-orange)](https://nailkarimov.github.io/microservices-testing/)
 
+### ▶ Open online
+
+| Page                                                                                             | What it is              |
+| ------------------------------------------------------------------------------------------------ | ----------------------- |
+| **[Allure test report](https://nailkarimov.github.io/microservices-testing/)**                   | latest CI run           |
+| [k6 load in Grafana](https://nailkarimov.github.io/microservices-testing/load/grafana/)          | dashboards per load run |
+| [Sock Shop test journey](https://nailkarimov.github.io/microservices-testing/microservices.html) | interactive guide       |
+| [k6, Prometheus and Grafana](https://nailkarimov.github.io/microservices-testing/grafana.html)   | interactive guide       |
+
+Click these links: opening an `.html` file in the file list shows its source code, GitHub does not run it.
+
 Testing a microservices system the way it runs in production. The system is the
 [Sock Shop](https://github.com/microservices-demo/microservices-demo) demo: **13 containers in Docker Compose**,
 with every service on its own port.
