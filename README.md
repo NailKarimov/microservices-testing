@@ -3,6 +3,7 @@
 [![Tests](https://github.com/NailKarimov/microservices-testing/actions/workflows/tests.yml/badge.svg)](https://github.com/NailKarimov/microservices-testing/actions/workflows/tests.yml)
 [![Load tests](https://github.com/NailKarimov/microservices-testing/actions/workflows/loadtest.yml/badge.svg)](https://github.com/NailKarimov/microservices-testing/actions/workflows/loadtest.yml)
 [![Allure report](https://img.shields.io/badge/report-Allure-orange)](https://nailkarimov.github.io/microservices-testing/)
+[![Release](https://img.shields.io/github/v/release/NailKarimov/microservices-testing)](https://github.com/NailKarimov/microservices-testing/releases)
 
 ### ▶ Open online
 
@@ -91,6 +92,8 @@ docs/                     test plan, test report, guides
   format, typecheck and all tests, and publishes Allure with history to GitHub Pages.
 - `loadtest.yml` runs by hand and every Monday at 04:00 UTC. It runs k6 with Prometheus and Grafana next to the
   stack and publishes every panel of the run under `load/grafana/`.
+
+Releases: committing `.github/releases/<tag>.md` runs the Release workflow, which creates the tag and the GitHub release with that file as its notes.
 
 ## Documentation
 
