@@ -1,0 +1,6 @@
+GET http://localhost:8084/carts/6adf2dfaee11cb0001a90dbc/items
+Query: {}
+Status: 200 (17 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+[{"id":"6adf2dfa25c9a100077bb826","itemId":"03fef6ac-1896-4ce8-bd69-b798f85c6e0b","quantity":1,"unitPrice":99.99},{"id":"6adf2dfa25c9a100077bb829","itemId":"3395a43e-2d88-40de-b95f-e00e1502085b","quantity":1,"unitPrice":18.0}]

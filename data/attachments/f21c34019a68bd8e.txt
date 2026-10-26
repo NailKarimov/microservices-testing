@@ -1,0 +1,7 @@
+POST http://localhost:8084/carts/6adf2dfcee11cb0001a90dfa/items
+Query: {}
+Request body: {"itemId":"boundary-item","unitPrice":-50}
+Status: 201 (11 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{"id":"6adf2dfc25c9a100077bb852","itemId":"boundary-item","quantity":1,"unitPrice":-50.0}
