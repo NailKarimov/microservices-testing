@@ -1,0 +1,7 @@
+POST http://localhost:8082/paymentAuth
+Query: {}
+Request body: {"amount":-5}
+Status: 500 (4 ms)
+Content-Type: text/plain; charset=utf-8
+Body:
+{"error":"Invalid payment amount","status_code":500,"status_text":"Internal Server Error"}

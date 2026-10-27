@@ -1,7 +1,0 @@
-POST http://localhost:8087/register
-Query: {}
-Request body: {"username":"qa_mvpeqvi43pfksd","password":"secret123","email":"qa_mvpeqvi43pfksd@example.com"}
-Status: 500 (2 ms)
-Content-Type: text/plain; charset=utf-8
-Body:
-{"error":"Do: E11000 duplicate key error collection: users.customers index: username_1 dup key: { : \"qa_mvpeqvi43pfksd\" }","status_code":500,"status_text":"Internal Server Error"}

@@ -1,6 +1,0 @@
-GET http://localhost:8084/carts/6adf70bbee11cb0001ae6ee6/items
-Query: {}
-Status: 200 (17 ms)
-Content-Type: application/json;charset=UTF-8
-Body:
-[]
