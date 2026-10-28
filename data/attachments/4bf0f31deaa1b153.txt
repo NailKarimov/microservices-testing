@@ -1,6 +1,0 @@
-GET http://localhost:8087/customers/6ae064b9ee11cb00015f1577/cards
-Query: {}
-Status: 200 (12 ms)
-Content-Type: application/hal+json
-Body:
-{"_embedded":{"card":[{"longNum":"4111111111111111","expires":"12/30","ccv":"123","id":"6ae064b9ee11cb00015f1579","_links":{"card":{"href":"http://user/cards/6ae064b9ee11cb00015f1579"},"self":{"href":"http://user/cards/6ae064b9ee11cb00015f1579"}}}]}}
