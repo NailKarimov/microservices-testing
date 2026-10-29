@@ -1,7 +1,0 @@
-POST http://localhost:8085/orders
-Query: {}
-Request body: {"customer":"http://user/customers/6ae1bf8eee11cb0001601a33","address":"http://user/addresses/6ae1bf8eee11cb0001601a34","card":"http://user/cards/6ae1bf8eee11cb0001601a35","items":"http://carts/carts/6ae1bf8eee11cb0001601a33/items"}
-Status: 500 (55 ms)
-Content-Type: application/json;charset=UTF-8
-Body:
-{"timestamp":1793179534702,"status":500,"error":"Internal Server Error","exception":"java.lang.IllegalStateException","message":"Unable to create order due to unspecified IO error.","path":"/orders"}

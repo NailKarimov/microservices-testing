@@ -1,7 +1,0 @@
-POST http://localhost:8087/addresses
-Query: {}
-Request body: {"userID":"6ae1bfb6ee11cb0001601a6a","street":"Brivibas","number":"1","country":"Latvia","city":"Riga","postcode":"LV-1010"}
-Status: 200 (3 ms)
-Content-Type: application/hal+json
-Body:
-{"id":"6ae1bfb6ee11cb0001601a6b"}
