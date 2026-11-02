@@ -1,0 +1,6 @@
+GET http://localhost:8087/login
+Query: {}
+Status: 500 (6 ms)
+Content-Type: text/plain; charset=utf-8
+Body:
+{"error":"Do: Unauthorized","status_code":500,"status_text":"Internal Server Error"}
