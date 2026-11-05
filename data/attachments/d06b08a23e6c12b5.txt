@@ -1,6 +1,0 @@
-OPTIONS http://localhost:8081/catalogue?size=1
-Query: {}
-Status: 200 (51 ms)
-Content-Type: text/html; charset=utf-8
-Body:
-GET,HEAD
