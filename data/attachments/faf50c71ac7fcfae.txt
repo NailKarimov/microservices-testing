@@ -1,0 +1,44 @@
+POST http://localhost:8085/orders
+Query: {}
+Request body: {"customer":"http://user/customers/6aeef2e8ee11cb00015e57c4","address":"http://user/addresses/6aeef2e8ee11cb00015e57c5","card":"http://user/cards/6aeef2e8ee11cb00015e57c6","items":"http://carts/carts/6aeef2e8ee11cb00015e57c4/items"}
+Status: 201 (46 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{
+  "id" : "6aeef2e883fd310007d7080d",
+  "customerId" : "6aeef2e8ee11cb00015e57c4",
+  "customer" : {
+    "id" : null,
+    "firstName" : "",
+    "lastName" : "",
+    "username" : "qa_mw67v27dvflnup",
+    "addresses" : [ ],
+    "cards" : [ ]
+  },
+  "address" : {
+    "id" : null,
+    "number" : "1",
+    "street" : "Brivibas",
+    "city" : "Riga",
+    "postcode" : "LV-1010",
+    "country" : "Latvia"
+  },
+  "card" : {
+    "id" : null,
+    "longNum" : "4111111111111111",
+    "expires" : "12/30",
+    "ccv" : "123"
+  },
+  "items" : [ {
+    "id" : "6aeef2e8dd04d20007da6642",
+    "itemId" : "a0a4f044-b040-410d-8ead-4de0446aec7e",
+    "quantity" : 1,
+    "unitPrice" : 7.99
+  } ],
+  "shipment" : {
+    "id" : "b839ea1c-7126-496a-9f79-52658f3c886d",
+    "name" : "6aeef2e8ee11cb00015e57c4"
+  },
+  "date" : "2026-11-07T09:44:08.599+0000",
+  "total" : 12.98
+}
