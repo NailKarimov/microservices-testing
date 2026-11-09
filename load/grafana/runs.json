@@ -2,6 +2,18 @@
  {
   "script": "catalogue-browse",
   "profile": "load",
+  "testid": "catalogue-browse-load-2026-11-09-12-41-49",
+  "from": 1794228109594,
+  "to": 1794228247270,
+  "requests": 9028,
+  "rps": 66.57413681413001,
+  "p95": 1.2925019999999998,
+  "failed": 0,
+  "report": "catalogue-browse-load-2026-11-09-12-41-49.k6.html"
+ },
+ {
+  "script": "catalogue-browse",
+  "profile": "load",
   "testid": "catalogue-browse-load-2026-11-02-12-09-49",
   "from": 1793621389486,
   "to": 1793621527256,
