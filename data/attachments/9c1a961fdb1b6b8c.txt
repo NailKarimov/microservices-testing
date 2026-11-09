@@ -1,6 +1,0 @@
-GET http://localhost:8083/catalogue/00000000-0000-0000-0000-000000000000
-Query: {}
-Status: 500 (4 ms)
-Content-Type: text/plain; charset=utf-8
-Body:
-{"error":"Do: not found","status_code":500,"status_text":"Internal Server Error"}
