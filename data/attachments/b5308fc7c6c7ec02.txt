@@ -1,0 +1,7 @@
+POST http://localhost:8085/orders
+Query: {}
+Request body: {"customer":"http://user/customers/6af3dd53ee11cb00010776a4","address":"http://user/addresses/6af3dd53ee11cb00010776a5","card":"http://user/cards/6af3dd53ee11cb00010776a6","items":"http://carts/carts/6af3dd53ee11cb00010776a4/items"}
+Status: 500 (5027 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{"timestamp":1794366808982,"status":500,"error":"Internal Server Error","exception":"java.lang.IllegalStateException","message":"Unable to create order due to timeout from one of the services.","path":"/orders"}
