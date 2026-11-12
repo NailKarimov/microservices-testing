@@ -1,0 +1,7 @@
+POST http://localhost:8084/carts/6af52ecfee11cb0001df6058/items
+Query: {}
+Request body: {"itemId":"does-not-exist","unitPrice":5}
+Status: 201 (22 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{"id":"6af52ecf4e8d3a0006a1a9a6","itemId":"does-not-exist","quantity":1,"unitPrice":5.0}
