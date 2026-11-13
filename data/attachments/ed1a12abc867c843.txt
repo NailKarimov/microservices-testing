@@ -1,6 +1,0 @@
-GET http://localhost:8083/health
-Query: {}
-Status: 200 (3 ms)
-Content-Type: application/json; charset=utf-8
-Body:
-{"health":[{"service":"catalogue","status":"OK","time":"2026-11-12 03:13:19.04096289 +0000 UTC"},{"service":"catalogue-db","status":"OK","time":"2026-11-12 03:13:19.041015428 +0000 UTC"}]}

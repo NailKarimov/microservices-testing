@@ -1,6 +1,0 @@
-GET http://localhost:8084/carts/6af52eceee11cb0001df603b/items
-Query: {}
-Status: 200 (10 ms)
-Content-Type: application/json;charset=UTF-8
-Body:
-[{"id":"6af52ece4e8d3a0006a1a991","itemId":"03fef6ac-1896-4ce8-bd69-b798f85c6e0b","quantity":2,"unitPrice":99.99}]
