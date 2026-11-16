@@ -1,0 +1,6 @@
+GET http://localhost:8083/catalogue?tags=geek&size=1000
+Query: {"tags":"geek","size":"1000"}
+Status: 200 (1 ms)
+Content-Type: application/json; charset=utf-8
+Body:
+[{"id":"d3588630-ad8e-49df-bbd7-3167f7efb246","name":"YouTube.sock","description":"We were not paid to sell this sock. It's just a bit geeky.","imageUrl":["/catalogue/images/youtube_1.jpeg","/catalogue/images/youtube_2.jpeg"],"price":10.99,"count":801,"tag":["geek"]}]

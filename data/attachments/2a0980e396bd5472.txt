@@ -1,7 +1,0 @@
-POST http://localhost:8082/paymentAuth
-Query: {}
-Request body: {}
-Status: 500 (2 ms)
-Content-Type: text/plain; charset=utf-8
-Body:
-{"error":"Cannot unmarshal object key \"amount\" from JSON: {}","status_code":500,"status_text":"Internal Server Error"}
