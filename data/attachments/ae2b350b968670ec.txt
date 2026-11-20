@@ -1,0 +1,51 @@
+GET http://localhost:8086/actuator
+Query: {}
+Status: 200 (36 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8086/actuator"
+    },
+    "autoconfig" : {
+      "href" : "http://localhost:8086/autoconfig"
+    },
+    "configprops" : {
+      "href" : "http://localhost:8086/configprops"
+    },
+    "info" : {
+      "href" : "http://localhost:8086/info"
+    },
+    "trace" : {
+      "href" : "http://localhost:8086/trace"
+    },
+    "dump" : {
+      "href" : "http://localhost:8086/dump"
+    },
+    "restart" : {
+      "href" : "http://localhost:8086/restart"
+    },
+    "env" : {
+      "href" : "http://localhost:8086/env"
+    },
+    "beans" : {
+      "href" : "http://localhost:8086/beans"
+    },
+    "heapdump" : {
+      "href" : "http://localhost:8086/heapdump"
+    },
+    "resume" : {
+      "href" : "http://localhost:8086/resume"
+    },
+    "mappings" : {
+      "href" : "http://localhost:8086/mappings"
+    },
+    "refresh" : {
+      "href" : "http://localhost:8086/refresh"
+    },
+    "pause" : {
+      "href" : "http://localhost:8086/pause"
+    }
+  }
+}
