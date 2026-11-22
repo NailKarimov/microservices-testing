@@ -1,0 +1,7 @@
+POST http://localhost:8087/cards
+Query: {}
+Request body: {"userID":"6b025dd7ee11cb0001eb9c5c","longNum":"4111111111111111","expires":"12/30","ccv":"123"}
+Status: 200 (1 ms)
+Content-Type: application/hal+json
+Body:
+{"id":"6b025dd7ee11cb0001eb9c5e"}
