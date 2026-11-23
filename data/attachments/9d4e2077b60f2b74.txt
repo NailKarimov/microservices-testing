@@ -1,0 +1,6 @@
+GET http://localhost:8081/customers/x%27%22%3C%3E
+Query: {}
+Status: 200 (9 ms)
+Content-Type: text/plain; charset=utf-8
+Body:
+{"error":"Do: Invalid Id Hex","status_code":500,"status_text":"Internal Server Error"}
