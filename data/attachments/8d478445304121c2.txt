@@ -1,5 +1,0 @@
-GET http://localhost:8085/orders/000000000000000000000000
-Query: {}
-Status: 404 (21 ms)
-Content-Type: 
-Body:
