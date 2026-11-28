@@ -1,0 +1,7 @@
+POST http://localhost:8084/carts/6b0a46b4ee11cb00019a6241/items
+Query: {}
+Request body: {"itemId":"d3588630-ad8e-49df-bbd7-3167f7efb246","unitPrice":10.99}
+Status: 201 (39 ms)
+Content-Type: application/json;charset=UTF-8
+Body:
+{"id":"6b0a46b48436c40007b847f3","itemId":"d3588630-ad8e-49df-bbd7-3167f7efb246","quantity":1,"unitPrice":10.99}

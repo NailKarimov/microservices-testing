@@ -1,7 +1,0 @@
-POST http://localhost:8082/paymentAuth
-Query: {}
-Request body: {"amount":"abc"}
-Status: 500 (3 ms)
-Content-Type: text/plain; charset=utf-8
-Body:
-{"error":"json: cannot unmarshal string into Go value of type float32","status_code":500,"status_text":"Internal Server Error"}
